@@ -1,0 +1,19 @@
+{
+  "name": "mgatepass-backend",
+  "version": "1.0.0",
+  "description": "Material gatepass management system backend",
+  "repository": "https://github.com/tamsinfo/mgatepass.git",
+  "license": "SEE LICENSE IN LICENSE",
+  "private": true,
+  "dependencies": {
+    "@sap/cds": "^8",
+    "express": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^1",
+    "@cap-js/cds-types": "^0.7.0"
+  },
+  "scripts": {
+    "start": "cds-serve"
+  }
+}
