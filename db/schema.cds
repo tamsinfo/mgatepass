@@ -40,3 +40,41 @@ entity Gates : cuid, managed {
     allowEntry : Boolean default true;
     allowExit  : Boolean default true;
 }
+
+// --- Business Entities ---
+
+entity Vehicles : cuid, managed {
+    vehicleNumber : String(20) not null;
+    type          : Association to VehicleTypes;
+    transporter   : String(100);
+}
+
+entity Drivers : cuid, managed {
+    name          : String(100) not null;
+    licenseNumber : String(50);
+    contactNumber : String(20);
+}
+
+entity Weights : cuid {
+    entryWeight : Decimal(10, 3);
+    exitWeight  : Decimal(10, 3);
+}
+
+entity Passes : cuid, managed {
+    passNumber   : String(20) not null;
+    processType  : ProcessType not null;
+    gatepassType : GatepassType not null;
+    documentType : String(50);
+    vehicle      : Association to Vehicles;
+    driver       : Association to Drivers;
+    entryGate    : Association to Gates;
+    exitGate     : Association to Gates;
+    weight       : Association to Weights;
+    documents    : Composition of many PassDocuments
+                     on documents.pass = $self;
+}
+
+entity PassDocuments : cuid {
+    pass           : Association to Passes;
+    documentNumber : String(50) not null;
+}
