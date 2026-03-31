@@ -41,8 +41,6 @@ entity Gates : cuid, managed {
     allowExit  : Boolean default true;
 }
 
-// --- Business Entities ---
-
 entity Vehicles : cuid, managed {
     vehicleNumber : String(20) not null;
     type          : Association to VehicleTypes;
@@ -70,11 +68,32 @@ entity Passes : cuid, managed {
     entryGate    : Association to Gates;
     exitGate     : Association to Gates;
     weight       : Association to Weights;
-    documents    : Composition of many PassDocuments
-                     on documents.pass = $self;
+    documents    : many String(50);
+    auditLog     : Composition of many PassAuditLogs
+                     on auditLog.pass = $self;
 }
 
-entity PassDocuments : cuid {
-    pass           : Association to Passes;
-    documentNumber : String(50) not null;
+type AuditAction : String enum {
+    Created;
+    SentForApproval;
+    Approved;
+    Rejected;
+    Cancelled;
+    WeightRecorded;
+    EntryPerformed;
+    ExitPerformed;
+    Updated;
+    Printed;
+    Returned;
+    Closed;
+};
+
+entity PassAuditLogs : cuid {
+    pass        : Association to Passes;
+    action      : AuditAction not null;
+    performedAt : Timestamp not null;
+    performedBy : String(255) not null;
+    oldValue    : LargeString;
+    newValue    : LargeString;
+    remarks     : String(500);
 }
