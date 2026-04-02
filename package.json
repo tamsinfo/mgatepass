@@ -15,27 +15,5 @@
   },
   "scripts": {
     "start": "cds-serve"
-  },
-  "cds": {
-    "requires": {
-      "auth": {
-        "[development]": {
-          "kind": "mocked",
-          "users": {
-            "admin": {
-              "password": "admin",
-              "roles": ["admin"]
-            },
-            "user": {
-              "password": "user",
-              "roles": ["user"]
-            }
-          }
-        },
-        "[production]": {
-          "kind": "xsuaa"
-        }
-      }
-    }
   }
 }
