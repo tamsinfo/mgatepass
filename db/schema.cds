@@ -5,6 +5,17 @@ using { cuid, managed } from '@sap/cds/common';
 type ProcessType  : String enum { Inward; Outward };
 type GatepassType : String enum { Returnable; NonReturnable; AgainstOutwardRGP; AgainstInwardRGP };
 
+type PassStatus : String enum {
+    Draft;
+    PendingApproval;
+    Approved;
+    Rejected;
+    Cancelled;
+    Completed;
+    PartiallyReturned;
+    Returned;
+};
+
 entity AppConfig : cuid, managed {
     weighbridgeEnabled : Boolean default false;
     weightUnit         : String(10);
@@ -60,6 +71,7 @@ entity Weights : cuid {
 
 entity Passes : cuid, managed {
     passNumber   : String(20) not null;
+    status       : PassStatus not null default 'Draft';
     processType  : ProcessType not null;
     gatepassType : GatepassType not null;
     documentType : String(50);
@@ -84,8 +96,6 @@ type AuditAction : String enum {
     ExitPerformed;
     Updated;
     Printed;
-    Returned;
-    Closed;
 };
 
 entity PassAuditLogs : cuid {
