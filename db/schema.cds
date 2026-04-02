@@ -11,6 +11,10 @@ type PassStatus : String enum {
     Approved;
     Rejected;
     Cancelled;
+    EntryWeightPending;
+    GateEntryPending;
+    ExitWeightPending;
+    GateExitPending;
     Completed;
     PartiallyReturned;
     Returned;
