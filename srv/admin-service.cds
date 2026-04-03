@@ -34,29 +34,5 @@ service AdminService @(requires: 'Administrator') {
     @readonly
     entity PassAuditLogs as projection on mgatepass.PassAuditLogs;
 
-    type VehicleInput {
-        vehicleNumber : String(20);
-        type          : UUID;
-        transporter   : String(100);
-    }
-
-    type DriverInput {
-        name          : String(100);
-        licenseNumber : String(50);
-        contactNumber : String(20);
-    }
-
-    action createGatepass(
-        passNumber   : String(20),
-        processType  : mgatepass.ProcessType,
-        gatepassType : mgatepass.GatepassType,
-        documentType : String(50),
-        documents    : many String(50),
-        entryGate    : UUID,
-        exitGate     : UUID,
-        vehicle      : VehicleInput,
-        driver       : DriverInput
-    ) returns Passes;
-
     action deleteGatepass(passId : UUID);
 }

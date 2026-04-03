@@ -12,7 +12,7 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
 
     @(restrict: [
         { grant: 'READ',   to: ['Administrator', 'WeighbridgeOperator', 'GateOperator', 'Approver'] },
-        { grant: 'UPDATE', to: ['Administrator', 'Approver'] }
+        { grant: 'UPDATE', to: ['Administrator', 'GateOperator', 'Approver'] }
     ])
     entity Passes as projection on mgatepass.Passes;
 
