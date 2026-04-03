@@ -1,17 +1,53 @@
 {
   "scopes": [
     {
-      "name": "$XSAPPNAME.admin",
-      "description": "admin"
+      "name": "$XSAPPNAME.Administrator",
+      "description": "Administrator"
+    },
+    {
+      "name": "$XSAPPNAME.WeighbridgeOperator",
+      "description": "WeighbridgeOperator"
+    },
+    {
+      "name": "$XSAPPNAME.GateOperator",
+      "description": "GateOperator"
+    },
+    {
+      "name": "$XSAPPNAME.Approver",
+      "description": "Approver"
     }
   ],
   "attributes": [],
   "role-templates": [
     {
-      "name": "admin",
+      "name": "Administrator",
       "description": "generated",
       "scope-references": [
-        "$XSAPPNAME.admin"
+        "$XSAPPNAME.Administrator"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "WeighbridgeOperator",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.WeighbridgeOperator"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "GateOperator",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.GateOperator"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "Approver",
+      "description": "generated",
+      "scope-references": [
+        "$XSAPPNAME.Approver"
       ],
       "attribute-references": []
     }

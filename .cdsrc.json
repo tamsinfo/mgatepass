@@ -6,11 +6,19 @@
         "users": {
           "admin": {
             "password": "admin",
-            "roles": ["admin"]
+            "roles": ["Administrator"]
           },
-          "user": {
-            "password": "user",
-            "roles": ["user"]
+          "weighbridge": {
+            "password": "weighbridge",
+            "roles": ["WeighbridgeOperator"]
+          },
+          "gateop": {
+            "password": "gateop",
+            "roles": ["GateOperator"]
+          },
+          "approver": {
+            "password": "approver",
+            "roles": ["Approver"]
           }
         }
       },

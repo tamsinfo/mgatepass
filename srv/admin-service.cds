@@ -1,16 +1,16 @@
 using { mgatepass } from '../db/schema';
 
-service AdminService @(requires: 'admin') {
+service AdminService @(requires: 'Administrator') {
 
     @(restrict: [
-        { grant: 'READ', to: 'admin' },
-        { grant: 'UPDATE', to: 'admin' }
+        { grant: 'READ', to: 'Administrator' },
+        { grant: 'UPDATE', to: 'Administrator' }
     ])
     entity AppConfig as projection on mgatepass.AppConfig;
 
     @(restrict: [
-        { grant: 'READ', to: 'admin' },
-        { grant: 'UPDATE', to: 'admin' }
+        { grant: 'READ', to: 'Administrator' },
+        { grant: 'UPDATE', to: 'Administrator' }
     ])
     entity ApprovalRules as projection on mgatepass.ApprovalRules;
 
@@ -20,14 +20,14 @@ service AdminService @(requires: 'admin') {
     entity Drivers as projection on mgatepass.Drivers;
 
     @(restrict: [
-        { grant: 'READ', to: 'admin' },
-        { grant: 'UPDATE', to: 'admin' }
+        { grant: 'READ', to: 'Administrator' },
+        { grant: 'UPDATE', to: 'Administrator' }
     ])
     entity Passes as projection on mgatepass.Passes;
 
     @(restrict: [
-        { grant: 'READ', to: 'admin' },
-        { grant: 'UPDATE', to: 'admin' }
+        { grant: 'READ', to: 'Administrator' },
+        { grant: 'UPDATE', to: 'Administrator' }
     ])
     entity Weights as projection on mgatepass.Weights;
 
