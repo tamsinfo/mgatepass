@@ -19,6 +19,26 @@ type PassStatus : String enum {
     Returned;
 };
 
+type DocumentType : String enum {
+    PurchaseOrder;
+    BillingDocument;
+    GoodsReceivedNote;
+    Gatepass;
+};
+
+type AuditAction : String enum {
+    Created;
+    SentForApproval;
+    Approved;
+    Rejected;
+    Cancelled;
+    WeightRecorded;
+    EntryPerformed;
+    ExitPerformed;
+    Updated;
+    Printed;
+};
+
 entity AppConfig : cuid, managed {
     weighbridgeEnabled : Boolean default false;
     weightUnit         : String(10);
@@ -73,33 +93,21 @@ entity Weights : cuid {
 }
 
 entity Passes : cuid, managed {
-    passNumber   : String(20) not null;
-    status       : PassStatus not null default 'Draft';
-    processType  : ProcessType not null;
-    gatepassType : GatepassType not null;
-    documentType : String(50);
-    vehicle      : Association to Vehicles;
-    driver       : Association to Drivers;
-    entryGate    : Association to Gates;
-    exitGate     : Association to Gates;
-    weight       : Association to Weights;
-    documents    : many String(50);
-    auditLog     : Composition of many PassAuditLogs
-                     on auditLog.pass = $self;
+    passNumber         : String(20) not null;
+    status             : PassStatus not null default 'Draft';
+    processType        : ProcessType not null;
+    gatepassType       : GatepassType not null;
+    documentType       : DocumentType;
+    expectedReturnDate : Date;
+    vehicle            : Association to Vehicles;
+    driver             : Association to Drivers;
+    entryGate          : Association to Gates;
+    exitGate           : Association to Gates;
+    weight             : Association to Weights;
+    documents          : many String(50);
+    auditLog           : Composition of many PassAuditLogs
+                           on auditLog.pass = $self;
 }
-
-type AuditAction : String enum {
-    Created;
-    SentForApproval;
-    Approved;
-    Rejected;
-    Cancelled;
-    WeightRecorded;
-    EntryPerformed;
-    ExitPerformed;
-    Updated;
-    Printed;
-};
 
 entity PassAuditLogs : cuid {
     pass        : Association to Passes;
