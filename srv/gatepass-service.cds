@@ -36,13 +36,14 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
 
     @(requires: ['Administrator', 'GateOperator'])
     action createGatepass(
-        processType        : mgatepass.ProcessType,
-        gatepassType       : mgatepass.GatepassType,
-        documents          : many String(50),
-        entryGate          : UUID,
-        expectedReturnDate : Date,
-        vehicle            : VehicleInput,
-        driver             : DriverInput
+        processType         : mgatepass.ProcessType,
+        gatepassType        : mgatepass.GatepassType,
+        documents           : many String(50),
+        weighbridgeRequired : Boolean,
+        entryGate           : UUID,
+        expectedReturnDate  : Date,
+        vehicle             : VehicleInput,
+        driver              : DriverInput
     ) returns Passes;
 
     @(requires: ['Administrator', 'Approver'])

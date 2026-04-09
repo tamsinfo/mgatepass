@@ -98,8 +98,9 @@ entity Passes : cuid, managed {
     processType        : ProcessType not null;
     gatepassType       : GatepassType not null;
     documentType       : DocumentType;
-    expectedReturnDate : Date;
-    vehicle            : Association to Vehicles;
+    weighbridgeRequired : Boolean default false;
+    expectedReturnDate  : Date;
+    vehicle             : Association to Vehicles;
     driver             : Association to Drivers;
     entryGate          : Association to Gates;
     exitGate           : Association to Gates;
