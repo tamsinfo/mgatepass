@@ -1,6 +1,10 @@
 import cds from '@sap/cds'
+import type { Pass, Vehicle, Driver, PassAuditLog, createGatepass } from '#cds-models/GatepassService'
+import type { DocumentType } from '#cds-models/mgatepass'
 
-const DOCUMENT_TYPE_MAP: Record<string, string> = {
+type CreateGatepassParams = (typeof createGatepass)['__parameters']
+
+const DOCUMENT_TYPE_MAP: Record<string, DocumentType> = {
     'Inward_NonReturnable': 'PurchaseOrder',
     'Outward_NonReturnable': 'BillingDocument',
     'Inward_Returnable': 'GoodsReceivedNote',
@@ -16,14 +20,12 @@ const PASS_PREFIX: Record<string, string> = {
 
 export default class GatepassService extends cds.ApplicationService {
     async init() {
-        const { Passes, Vehicles, Drivers, Weights, PassAuditLogs } = this.entities
-
         this.on('createGatepass', async (req) => {
             const {
                 processType, gatepassType, documents,
                 weighbridgeRequired, entryGate, expectedReturnDate,
                 vehicle, driver
-            } = req.data
+            } = req.data as CreateGatepassParams
 
             if (!processType || !gatepassType) {
                 return req.error(400, 'processType and gatepassType are required')
@@ -46,11 +48,11 @@ export default class GatepassService extends cds.ApplicationService {
                 return req.error(400, 'Document numbers cannot be empty')
             }
 
-            const passNumber = await this.generatePassNumber(Passes, processType)
+            const passNumber = await this.generatePassNumber(processType)
 
             let vehicleId: string | null = null
             if (vehicle?.vehicleNumber?.trim()) {
-                vehicleId = await this.findOrCreateVehicle(Vehicles, {
+                vehicleId = await this.findOrCreateVehicle({
                     vehicleNumber: vehicle.vehicleNumber.trim().toUpperCase(),
                     type_ID: vehicle.type || null,
                     transporter: vehicle.transporter?.trim() || null
@@ -59,7 +61,7 @@ export default class GatepassService extends cds.ApplicationService {
 
             let driverId: string | null = null
             if (driver?.name?.trim()) {
-                driverId = await this.findOrCreateDriver(Drivers, {
+                driverId = await this.findOrCreateDriver({
                     name: driver.name.trim(),
                     licenseNumber: driver.licenseNumber?.trim() || null,
                     contactNumber: driver.contactNumber?.trim() || null
@@ -68,6 +70,7 @@ export default class GatepassService extends cds.ApplicationService {
 
             let weightId: string | null = null
             if (weighbridgeRequired) {
+                const { Weights } = this.entities
                 const result = await INSERT.into(Weights).entries({
                     entryWeight: null,
                     exitWeight: null
@@ -75,7 +78,7 @@ export default class GatepassService extends cds.ApplicationService {
                 weightId = result.req.data.ID
             }
 
-            const passData = {
+            const passData: Partial<Pass> = {
                 passNumber,
                 status: 'Draft',
                 processType,
@@ -90,6 +93,7 @@ export default class GatepassService extends cds.ApplicationService {
                 documents: sanitizedDocs
             }
 
+            const { Passes, PassAuditLogs } = this.entities
             const insertResult = await INSERT.into(Passes).entries(passData)
             const passId = insertResult.req.data.ID
 
@@ -100,7 +104,7 @@ export default class GatepassService extends cds.ApplicationService {
                 performedBy: req.user.id,
                 newValue: JSON.stringify(passData),
                 remarks: null
-            })
+            } as Partial<PassAuditLog>)
 
             return SELECT.one.from(Passes).where({ ID: passId })
         })
@@ -108,14 +112,15 @@ export default class GatepassService extends cds.ApplicationService {
         await super.init()
     }
 
-    private async generatePassNumber(Passes: any, processType: string): Promise<string> {
+    private async generatePassNumber(processType: string): Promise<string> {
         const prefix = PASS_PREFIX[processType]
+        const { Passes } = this.entities
 
         const latest = await SELECT.one
             .from(Passes)
             .columns('passNumber')
             .where({ processType })
-            .orderBy('passNumber desc')
+            .orderBy('passNumber desc') as Pass | null
 
         let seq = 1
         if (latest?.passNumber) {
@@ -127,30 +132,30 @@ export default class GatepassService extends cds.ApplicationService {
     }
 
     private async findOrCreateVehicle(
-        Vehicles: any,
         data: { vehicleNumber: string; type_ID: string | null; transporter: string | null }
     ): Promise<string> {
+        const { Vehicles } = this.entities
         const where: Record<string, string> = { vehicleNumber: data.vehicleNumber }
         if (data.type_ID) where.type_ID = data.type_ID
         if (data.transporter) where.transporter = data.transporter
 
-        const existing = await SELECT.one.from(Vehicles).where(where)
-        if (existing) return existing.ID
+        const existing = await SELECT.one.from(Vehicles).where(where) as Vehicle | null
+        if (existing) return existing.ID!
 
         const result = await INSERT.into(Vehicles).entries(data)
         return result.req.data.ID
     }
 
     private async findOrCreateDriver(
-        Drivers: any,
         data: { name: string; licenseNumber: string | null; contactNumber: string | null }
     ): Promise<string> {
+        const { Drivers } = this.entities
         const where: Record<string, string> = { name: data.name }
         if (data.licenseNumber) where.licenseNumber = data.licenseNumber
         if (data.contactNumber) where.contactNumber = data.contactNumber
 
-        const existing = await SELECT.one.from(Drivers).where(where)
-        if (existing) return existing.ID
+        const existing = await SELECT.one.from(Drivers).where(where) as Driver | null
+        if (existing) return existing.ID!
 
         const result = await INSERT.into(Drivers).entries(data)
         return result.req.data.ID

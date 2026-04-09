@@ -19,7 +19,7 @@
   },
   "scripts": {
     "start": "cds-serve",
-    "watch": "cds-ts w"
+    "watch": "cds-tsx watch"
   },
   "imports": {
     "#cds-models/*": "./@cds-models/*/index.js"

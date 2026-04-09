@@ -9,10 +9,11 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "allowJs": true,
+    "types": ["@cap-js/cds-types"],
     "paths": {
-      "#cds-models/*": [
-        "./@cds-models/*/index.ts"
-      ]
+      "#cds-models/*": ["./@cds-models/*/index.ts"]
     }
-  }
+  },
+  "include": ["srv/**/*.ts"],
+  "exclude": ["@cds-models", "node_modules"]
 }
