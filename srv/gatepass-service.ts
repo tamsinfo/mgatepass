@@ -1,6 +1,6 @@
 import cds from '@sap/cds'
 import type { Pass, Vehicle, Driver, PassAuditLog, createGatepass } from '#cds-models/GatepassService'
-import type { DocumentType } from '#cds-models/mgatepass'
+import type { DocumentType, PassStatus, AuditAction } from '#cds-models/mgatepass'
 
 type CreateGatepassParams = (typeof createGatepass)['__parameters']
 
@@ -20,6 +20,36 @@ const PASS_PREFIX: Record<string, string> = {
 
 export default class GatepassService extends cds.ApplicationService {
     async init() {
+        this.before('UPDATE', 'Passes', async (req) => {
+            const data = req.data as Partial<Pass>
+
+            const pass = await this.getPass(data.ID!)
+            if (pass?.status === 'PendingApproval') {
+                return req.error(403, 'Pass cannot be updated while pending approval')
+            }
+
+            if ('passNumber' in data) {
+                return req.error(400, 'Pass number cannot be modified')
+            }
+
+            if ('processType' in data && !data.processType) {
+                return req.error(400, 'Process type cannot be removed')
+            }
+            if ('gatepassType' in data && !data.gatepassType) {
+                return req.error(400, 'Gatepass type cannot be removed')
+            }
+            if ('documentType' in data && !data.documentType) {
+                return req.error(400, 'Document type cannot be removed')
+            }
+
+            if ('documents' in data) {
+                const docs = data.documents
+                if (!docs || docs.length === 0 || docs.every(d => !d?.trim())) {
+                    return req.error(400, 'Document numbers cannot be removed')
+                }
+            }
+        })
+
         this.on('createGatepass', async (req) => {
             const {
                 processType, gatepassType, documents,
@@ -109,7 +139,104 @@ export default class GatepassService extends cds.ApplicationService {
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 
+        this.on('sendForApproval', 'Passes', async (req) => {
+            const passId = req.params[0] as { ID: string }
+
+            const pass = await this.getPass(passId.ID)
+            if (!pass) return req.error(404, `Pass ${passId.ID} not found`)
+
+            if (pass.status !== 'Draft') {
+                return req.error(409, `Pass can only be sent for approval from Draft status, current status is '${pass.status}'`)
+            }
+
+            if (!pass.vehicle_ID || !pass.driver_ID) {
+                return req.error(422, 'Vehicle and driver must be linked before sending for approval')
+            }
+
+            const { Passes } = this.entities
+            await this.updatePassStatus(passId.ID, 'PendingApproval', 'SentForApproval', pass.status, req.user.id, null)
+            return SELECT.one.from(Passes).where({ ID: passId.ID })
+        })
+
+        this.on('approvePass', 'Passes', async (req) => {
+            const passId = req.params[0] as { ID: string }
+            const { remarks } = req.data as { remarks?: string | null }
+
+            const pass = await this.getPass(passId.ID)
+            if (!pass) return req.error(404, `Pass ${passId.ID} not found`)
+
+            if (pass.status !== 'PendingApproval') {
+                return req.error(409, `Pass can only be approved from PendingApproval status, current status is '${pass.status}'`)
+            }
+
+            if (!pass.vehicle_ID || !pass.driver_ID) {
+                return req.error(422, 'Vehicle and driver must be linked before approval')
+            }
+
+            const { Passes } = this.entities
+            await this.updatePassStatus(passId.ID, 'Approved', 'Approved', pass.status, req.user.id, remarks)
+            return SELECT.one.from(Passes).where({ ID: passId.ID })
+        })
+
+        this.on('rejectPass', 'Passes', async (req) => {
+            const passId = req.params[0] as { ID: string }
+            const { remarks } = req.data as { remarks?: string | null }
+
+            const pass = await this.getPass(passId.ID)
+            if (!pass) return req.error(404, `Pass ${passId.ID} not found`)
+
+            if (pass.status !== 'PendingApproval') {
+                return req.error(409, `Pass can only be rejected from PendingApproval status, current status is '${pass.status}'`)
+            }
+
+            const { Passes } = this.entities
+            await this.updatePassStatus(passId.ID, 'Rejected', 'Rejected', pass.status, req.user.id, remarks)
+            return SELECT.one.from(Passes).where({ ID: passId.ID })
+        })
+
+        this.on('cancelPass', 'Passes', async (req) => {
+            const passId = req.params[0] as { ID: string }
+            const { remarks } = req.data as { remarks?: string | null }
+
+            const pass = await this.getPass(passId.ID)
+            if (!pass) return req.error(404, `Pass ${passId.ID} not found`)
+
+            if (pass.status === 'Cancelled') {
+                return req.error(409, 'Pass is already cancelled')
+            }
+
+            const { Passes } = this.entities
+            await this.updatePassStatus(passId.ID, 'Cancelled', 'Cancelled', pass.status!, req.user.id, remarks)
+            return SELECT.one.from(Passes).where({ ID: passId.ID })
+        })
+
         await super.init()
+    }
+
+    private async getPass(passId: string): Promise<Pass | null> {
+        const { Passes } = this.entities
+        return await SELECT.one.from(Passes).where({ ID: passId }) as Pass | null
+    }
+
+    private async updatePassStatus(
+        passId: string,
+        newStatus: PassStatus,
+        auditAction: AuditAction,
+        oldStatus: PassStatus,
+        userId: string,
+        remarks: string | null | undefined
+    ): Promise<void> {
+        const { Passes, PassAuditLogs } = this.entities
+        await UPDATE(Passes).set({ status: newStatus }).where({ ID: passId })
+        await INSERT.into(PassAuditLogs).entries({
+            pass_ID: passId,
+            action: auditAction,
+            performedAt: new Date().toISOString(),
+            performedBy: userId,
+            oldValue: JSON.stringify({ status: oldStatus }),
+            newValue: JSON.stringify({ status: newStatus }),
+            remarks: remarks || null
+        } as Partial<PassAuditLog>)
     }
 
     private async generatePassNumber(processType: string): Promise<string> {

@@ -14,7 +14,20 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
         { grant: 'READ',   to: ['Administrator', 'WeighbridgeOperator', 'GateOperator', 'Approver'] },
         { grant: 'UPDATE', to: ['Administrator', 'GateOperator', 'Approver'] }
     ])
-    entity Passes as projection on mgatepass.Passes;
+    entity Passes as projection on mgatepass.Passes
+        actions {
+            @(requires: ['Administrator', 'GateOperator'])
+            action sendForApproval() returns Passes;
+
+            @(requires: ['Administrator', 'Approver'])
+            action approvePass(remarks : String(500)) returns Passes;
+
+            @(requires: ['Administrator', 'Approver'])
+            action rejectPass(remarks : String(500)) returns Passes;
+
+            @(requires: ['Administrator', 'GateOperator', 'Approver'])
+            action cancelPass(remarks : String(500)) returns Passes;
+        };
 
     @(restrict: [
         { grant: 'READ',   to: ['Administrator', 'WeighbridgeOperator', 'GateOperator', 'Approver'] },
@@ -45,13 +58,4 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
         vehicle             : VehicleInput,
         driver              : DriverInput
     ) returns Passes;
-
-    @(requires: ['Administrator', 'Approver'])
-    action approveGatepass(passId : UUID, remarks : String(500));
-
-    @(requires: ['Administrator', 'Approver'])
-    action rejectGatepass(passId : UUID, remarks : String(500));
-
-    @(requires: ['Administrator', 'GateOperator', 'Approver'])
-    action cancelGatepass(passId : UUID, remarks : String(500));
 }
