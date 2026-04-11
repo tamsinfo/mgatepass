@@ -1,0 +1,17 @@
+<mvc:View
+	controllerName="mgatepass.entry.controller.App"
+	xmlns="sap.m"
+	xmlns:mvc="sap.ui.core.mvc"
+>
+	<App id="app">
+		<Page
+			id="appPage"
+			title="{i18n>appTitle}"
+			showFooter="false"
+		>
+			<content>
+				<Text text="Hello World" />
+			</content>
+		</Page>
+	</App>
+</mvc:View>
