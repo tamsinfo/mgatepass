@@ -14,12 +14,6 @@ framework:
     - name: themelib_sap_horizon
 server:
   customMiddleware:
-    - name: fiori-tools-proxy
-      afterMiddleware: compression
-      configuration:
-        backend:
-          - path: /odata
-            url: http://localhost:4004
     - name: ui5-middleware-livereload
       afterMiddleware: compression
     - name: ui5-tooling-transpile-middleware

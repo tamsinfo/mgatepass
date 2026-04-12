@@ -4,7 +4,6 @@
 	"version": "1.0.0",
 	"private": true,
 	"devDependencies": {
-		"@sap/ux-ui5-tooling": "^1.22.0",
 		"@sapui5/types": "^1.147.1",
 		"@ui5/cli": "^4.0.52",
 		"ui5-middleware-livereload": "^3.3.0",
@@ -12,11 +11,6 @@
 	},
 	"peerDependencies": {
 		"typescript": "^6.0.3"
-	},
-	"ui5": {
-		"dependencies": [
-			"@sap/ux-ui5-tooling"
-		]
 	},
 	"scripts": {
 		"dev": "ui5 serve --port 8080 -o index.html",
