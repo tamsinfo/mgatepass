@@ -37,7 +37,8 @@
 			"libs": {
 				"sap.m": {},
 				"sap.ui.core": {},
-				"sap.ui.layout": {}
+				"sap.ui.layout": {},
+				"sap.ui.unified": {}
 			}
 		},
 		"contentDensities": {
@@ -64,7 +65,8 @@
 				"dataSource": "default",
 				"type": "sap.ui.model.odata.v4.ODataModel",
 				"settings": {
-					"operationMode": "Server"
+					"operationMode": "Server",
+					"updateGroupId": "configUpdate"
 				}
 			}
 		}

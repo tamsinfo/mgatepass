@@ -2,16 +2,122 @@
 	controllerName="mgatepass.config.controller.App"
 	xmlns="sap.m"
 	xmlns:mvc="sap.ui.core.mvc"
+	xmlns:u="sap.ui.unified"
 >
 	<App id="app">
 		<Page
 			id="appPage"
 			title="{i18n>appTitle}"
-			showFooter="false"
+			showFooter="true"
 		>
 			<content>
-				<Text text="Hello World" />
+				<Panel headerText="{i18n>approvalRulesTitle}" class="sapUiSmallMarginBottom">
+					<Table id="approvalRulesTable" items="{path: 'approvalRules', parameters: {$$ownRequest: true}}" mode="None">
+						<columns>
+							<Column><header><Text text="{i18n>processType}"/></header></Column>
+							<Column><header><Text text="{i18n>gatepassType}"/></header></Column>
+							<Column hAlign="Center"><header><Text text="{i18n>approvalRequired}"/></header></Column>
+						</columns>
+						<items>
+							<ColumnListItem>
+								<Text text="{processType}"/>
+								<Text text="{path: 'gatepassType', formatter: '.formatGatepassType'}"/>
+								<CheckBox selected="{approvalRequired}"/>
+							</ColumnListItem>
+						</items>
+					</Table>
+				</Panel>
+
+				<Panel headerText="{i18n>carrierInfoTitle}" class="sapUiSmallMarginBottom">
+					<Table id="vehicleTypesTable" items="{path: 'vehicleTypes', parameters: {$$ownRequest: true}}" mode="None">
+						<headerToolbar>
+							<Toolbar>
+								<ToolbarSpacer/>
+								<Button text="{i18n>add}" icon="sap-icon://add" press=".onAddCarrier"/>
+							</Toolbar>
+						</headerToolbar>
+						<columns>
+							<Column><header><Text text="{i18n>carrierType}"/></header></Column>
+							<Column hAlign="Center"><header><Text text="{i18n>transporterName}"/></header></Column>
+							<Column hAlign="Center"><header><Text text="{i18n>driverName}"/></header></Column>
+							<Column hAlign="Center"><header><Text text="{i18n>driverContact}"/></header></Column>
+							<Column hAlign="Center"><header><Text text="{i18n>vehicleNumber}"/></header></Column>
+							<Column hAlign="Center"><header><Text text="{i18n>driverLicense}"/></header></Column>
+							<Column hAlign="Center" width="4rem"/>
+						</columns>
+						<items>
+							<ColumnListItem>
+								<Input value="{name}"/>
+								<CheckBox selected="{requireTransporterName}"/>
+								<CheckBox selected="{requireDriverName}"/>
+								<CheckBox selected="{requireDriverContact}"/>
+								<CheckBox selected="{requireVehicleNumber}"/>
+								<CheckBox selected="{requireDriverLicense}"/>
+								<Button icon="sap-icon://delete" type="Transparent" press=".onDeleteCarrier"/>
+							</ColumnListItem>
+						</items>
+					</Table>
+				</Panel>
+
+				<Panel headerText="{i18n>gateInfoTitle}" class="sapUiSmallMarginBottom">
+					<Table id="gatesTable" items="{path: 'gates', parameters: {$$ownRequest: true}}" mode="None">
+						<headerToolbar>
+							<Toolbar>
+								<ToolbarSpacer/>
+								<Button text="{i18n>add}" icon="sap-icon://add" press=".onAddGate"/>
+							</Toolbar>
+						</headerToolbar>
+						<columns>
+							<Column><header><Text text="{i18n>gateName}"/></header></Column>
+							<Column hAlign="Center"><header><Text text="{i18n>gateEntry}"/></header></Column>
+							<Column hAlign="Center"><header><Text text="{i18n>gateExit}"/></header></Column>
+							<Column hAlign="Center" width="4rem"/>
+						</columns>
+						<items>
+							<ColumnListItem>
+								<Input value="{name}"/>
+								<CheckBox selected="{allowEntry}"/>
+								<CheckBox selected="{allowExit}"/>
+								<Button icon="sap-icon://delete" type="Transparent" press=".onDeleteGate"/>
+							</ColumnListItem>
+						</items>
+					</Table>
+				</Panel>
+
+				<Panel headerText="{i18n>weighbridgeTitle}" class="sapUiSmallMarginBottom">
+					<VBox class="sapUiSmallMargin">
+						<CheckBox text="{i18n>weighbridgeEnabled}" selected="{weighbridgeEnabled}"/>
+						<HBox alignItems="Center" class="sapUiSmallMarginTop">
+							<Label text="{i18n>weightUnit}" class="sapUiSmallMarginEnd"/>
+							<Input value="{weightUnit}" width="10rem"/>
+						</HBox>
+					</VBox>
+				</Panel>
+
+				<Panel headerText="{i18n>companyLogoTitle}" class="sapUiSmallMarginBottom">
+					<VBox class="sapUiSmallMargin">
+						<u:FileUploader
+							id="logoUploader"
+							fileType="png,jpg,jpeg,svg,webp"
+							typeMissmatch=".onLogoTypeMismatch"
+							change=".onLogoChange"
+							buttonText="{i18n>browse}"
+						/>
+						<Image
+							src="{companyLogo}"
+							width="200px"
+							visible="{= !!${companyLogo} }"
+							class="sapUiSmallMarginTop"
+						/>
+					</VBox>
+				</Panel>
 			</content>
+			<footer>
+				<Toolbar>
+					<ToolbarSpacer/>
+					<Button text="{i18n>save}" type="Emphasized" icon="sap-icon://save" press=".onSave"/>
+				</Toolbar>
+			</footer>
 		</Page>
 	</App>
 </mvc:View>
