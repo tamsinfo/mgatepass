@@ -4,13 +4,72 @@
 	xmlns:mvc="sap.ui.core.mvc"
 >
 	<App id="app">
-		<Page
-			id="appPage"
-			title="{i18n>appTitle}"
-			showFooter="false"
-		>
+		<Page id="appPage" title="{i18n>appTitle}">
+			<headerContent>
+				<Button
+					text="{i18n>createGatepass}"
+					icon="sap-icon://add"
+					type="Emphasized"
+					press=".onCreateGatepass"
+				/>
+			</headerContent>
 			<content>
-				<Text text="Hello World" />
+				<Panel class="sapUiSmallMarginBottom">
+					<HBox alignItems="End" class="sapUiSmallMargin" wrap="Wrap">
+						<VBox class="sapUiSmallMarginEnd">
+							<Label text="{i18n>filterCreatedDate}" labelFor="dateFilter"/>
+							<DateRangeSelection id="dateFilter" change=".onSearch"/>
+						</VBox>
+						<VBox class="sapUiSmallMarginEnd">
+							<Label text="{i18n>filterCreatedBy}" labelFor="createdByFilter"/>
+							<Input id="createdByFilter" width="12rem" submit=".onSearch"/>
+						</VBox>
+						<VBox class="sapUiSmallMarginEnd">
+							<Label text="{i18n>filterPassNumber}" labelFor="passNumberFilter"/>
+							<Input id="passNumberFilter" width="12rem" submit=".onSearch"/>
+						</VBox>
+						<HBox alignItems="End">
+							<Button text="{i18n>search}" icon="sap-icon://search" press=".onSearch" type="Emphasized" class="sapUiTinyMarginEnd"/>
+							<Button text="{i18n>resetFilters}" icon="sap-icon://clear-filter" press=".onResetFilters" type="Transparent"/>
+						</HBox>
+					</HBox>
+				</Panel>
+				<Panel>
+					<Table
+						id="passesTable"
+						items="{path: '/Passes', sorter: {path: 'createdAt', descending: true}}"
+						growing="true"
+						growingThreshold="20"
+						noDataText="{i18n>noData}"
+					>
+						<columns>
+							<Column><header><Text text="{i18n>passNumber}"/></header></Column>
+							<Column><header><Text text="{i18n>documentNumber}"/></header></Column>
+							<Column><header><Text text="{i18n>createdAt}"/></header></Column>
+							<Column><header><Text text="{i18n>createdBy}"/></header></Column>
+							<Column hAlign="End"><header><Text text="{i18n>actions}"/></header></Column>
+						</columns>
+						<items>
+							<ColumnListItem>
+								<Text text="{passNumber}"/>
+								<Text text="{path: 'documents', targetType: 'any', formatter: '.formatDocuments'}"/>
+								<Text text="{createdAt}"/>
+								<Text text="{createdBy}"/>
+								<HBox justifyContent="End">
+									<Button text="{i18n>edit}" icon="sap-icon://edit" type="Transparent" press=".onEditPass"/>
+									<Button
+										text="{i18n>sendForApproval}"
+										icon="sap-icon://forward"
+										type="Transparent"
+										press=".onSendForApproval"
+										visible="{parts: [{path: 'processType', targetType: 'any'}, {path: 'gatepassType', targetType: 'any'}, {path: 'approvalRules>/loaded', targetType: 'any'}], formatter: '.isApprovalEnabled'}"
+									/>
+									<Button text="{i18n>cancel}" icon="sap-icon://decline" type="Transparent" press=".onCancelPass"/>
+								</HBox>
+							</ColumnListItem>
+						</items>
+					</Table>
+				</Panel>
 			</content>
 		</Page>
 	</App>
