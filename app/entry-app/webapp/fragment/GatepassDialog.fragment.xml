@@ -1,0 +1,139 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core"
+	xmlns:form="sap.ui.layout.form"
+>
+	<Dialog
+		id="gatepassDialog"
+		title="{dialog>/title}"
+		contentWidth="40rem"
+		verticalScrolling="true"
+	>
+		<content>
+			<VBox class="sapUiSmallMargin">
+				<form:SimpleForm
+					editable="true"
+					layout="ResponsiveGridLayout"
+					labelSpanXL="4" labelSpanL="4" labelSpanM="4" labelSpanS="12"
+					emptySpanXL="0" emptySpanL="0" emptySpanM="0"
+					columnsXL="1" columnsL="1" columnsM="1"
+				>
+					<core:Title text="{i18n>sectionPassDetails}"/>
+					<Label text="{i18n>processType}" required="true"/>
+					<Select
+						id="processTypeSelect"
+						selectedKey="{dialog>/processType}"
+						change=".onProcessTypeChange"
+						forceSelection="false"
+					>
+						<items>
+							<core:Item key="" text=""/>
+							<core:Item key="Inward" text="{i18n>processTypeInward}"/>
+							<core:Item key="Outward" text="{i18n>processTypeOutward}"/>
+						</items>
+					</Select>
+					<Label text="{i18n>gatepassType}" required="true"/>
+					<Select
+						id="gatepassTypeSelect"
+						selectedKey="{dialog>/gatepassType}"
+						change=".onGatepassTypeChange"
+						forceSelection="false"
+					>
+						<items>
+							<core:Item key="" text=""/>
+							<core:Item key="NonReturnable" text="{i18n>gatepassTypeNonReturnable}"/>
+							<core:Item key="Returnable" text="{i18n>gatepassTypeReturnable}"/>
+							<core:Item key="AgainstOutwardRGP" text="{i18n>gatepassTypeAgainstOutwardRGP}"/>
+							<core:Item key="AgainstInwardRGP" text="{i18n>gatepassTypeAgainstInwardRGP}"/>
+						</items>
+					</Select>
+
+					<core:Title text="{i18n>sectionDocuments}"/>
+					<Label text="{i18n>documentNumberInput}" required="true"/>
+					<Input id="documentNumberInput" value="{dialog>/documentNumber}"/>
+
+					<core:Title text="{i18n>sectionAdditionalDetails}"/>
+					<Label
+						text="{i18n>weighbridgeApplicable}"
+						visible="{dialog>/weighbridgeEnabled}"
+					/>
+					<CheckBox
+						id="weighbridgeCheckbox"
+						selected="{dialog>/weighbridgeRequired}"
+						visible="{dialog>/weighbridgeEnabled}"
+					/>
+					<Label
+						text="{i18n>expectedReturnDate}"
+						visible="{dialog>/showReturnDate}"
+					/>
+					<DatePicker
+						id="expectedReturnDatePicker"
+						value="{dialog>/expectedReturnDate}"
+						visible="{dialog>/showReturnDate}"
+					/>
+				</form:SimpleForm>
+
+				<Panel class="sapUiSmallMarginTop">
+					<Table
+						id="documentItemsTable"
+						noDataText="{i18n>noDocumentItems}"
+					>
+						<columns>
+							<Column><header><Text text="{i18n>documentItemColumn}"/></header></Column>
+						</columns>
+					</Table>
+				</Panel>
+
+				<form:SimpleForm
+					id="carrierSection"
+					editable="true"
+					layout="ResponsiveGridLayout"
+					labelSpanXL="4" labelSpanL="4" labelSpanM="4" labelSpanS="12"
+					emptySpanXL="0" emptySpanL="0" emptySpanM="0"
+					columnsXL="1" columnsL="1" columnsM="1"
+					visible="{dialog>/showCarrierSection}"
+				>
+					<core:Title text="{i18n>sectionCarrierDetails}"/>
+					<Label text="{i18n>vehicleType}"/>
+					<Select
+						id="vehicleTypeSelect"
+						selectedKey="{dialog>/vehicleType}"
+						forceSelection="false"
+						items="{dialog>/vehicleTypes}"
+					>
+						<items>
+							<core:Item key="{dialog>ID}" text="{dialog>name}"/>
+						</items>
+					</Select>
+					<Label text="{i18n>vehicleNumber}"/>
+					<Input id="vehicleNumberInput" value="{dialog>/vehicleNumber}"/>
+					<Label text="{i18n>transporterName}"/>
+					<Input id="transporterInput" value="{dialog>/transporter}"/>
+					<Label text="{i18n>driverName}"/>
+					<Input id="driverNameInput" value="{dialog>/driverName}"/>
+					<Label text="{i18n>driverLicense}"/>
+					<Input id="driverLicenseInput" value="{dialog>/driverLicense}"/>
+					<Label text="{i18n>driverContact}"/>
+					<Input id="driverContactInput" value="{dialog>/driverContact}"/>
+				</form:SimpleForm>
+			</VBox>
+		</content>
+		<buttons>
+			<Button
+				text="{i18n>save}"
+				type="Emphasized"
+				press=".onSaveGatepass"
+			/>
+			<Button
+				text="{i18n>sendForApprovalBtn}"
+				type="Ghost"
+				press=".onSendForApprovalFromDialog"
+				visible="{dialog>/isEditMode}"
+			/>
+			<Button
+				text="{i18n>close}"
+				press=".onCloseGatepassDialog"
+			/>
+		</buttons>
+	</Dialog>
+</core:FragmentDefinition>

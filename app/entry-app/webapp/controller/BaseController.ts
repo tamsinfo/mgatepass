@@ -7,9 +7,16 @@ import type ResourceBundle from "sap/base/i18n/ResourceBundle";
  */
 export default class BaseController extends Controller {
 
-	public getResourceText(sKey: string, aArgs?: string[]): string {
+	private _bundle: ResourceBundle | null = null;
+
+	protected async initResourceBundle(): Promise<void> {
 		const oModel = this.getOwnerComponent()!.getModel("i18n") as ResourceModel;
-		const oBundle = oModel.getResourceBundle() as ResourceBundle;
-		return oBundle.getText(sKey, aArgs) ?? sKey;
+		const result = oModel.getResourceBundle();
+		this._bundle = result instanceof Promise ? await result : result;
+	}
+
+	public getResourceText(sKey: string, aArgs?: string[]): string {
+		if (!this._bundle) return sKey;
+		return this._bundle.getText(sKey, aArgs) ?? sKey;
 	}
 }
