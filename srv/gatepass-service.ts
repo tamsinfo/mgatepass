@@ -101,11 +101,9 @@ export default class GatepassService extends cds.ApplicationService {
             let weightId: string | null = null
             if (weighbridgeRequired) {
                 const { Weights } = this.entities
-                const result = await INSERT.into(Weights).entries({
-                    entryWeight: null,
-                    exitWeight: null
-                })
-                weightId = result.req.data.ID
+                const weightEntry: Record<string, unknown> = { entryWeight: null, exitWeight: null }
+                await INSERT.into(Weights).entries(weightEntry)
+                weightId = weightEntry.ID as string
             }
 
             const passData: Partial<Pass> = {
@@ -124,8 +122,8 @@ export default class GatepassService extends cds.ApplicationService {
             }
 
             const { Passes, PassAuditLogs } = this.entities
-            const insertResult = await INSERT.into(Passes).entries(passData)
-            const passId = insertResult.req.data.ID
+            await INSERT.into(Passes).entries(passData)
+            const passId = passData.ID!
 
             await INSERT.into(PassAuditLogs).entries({
                 pass_ID: passId,
@@ -269,8 +267,8 @@ export default class GatepassService extends cds.ApplicationService {
         const existing = await SELECT.one.from(Vehicles).where(where) as Vehicle | null
         if (existing) return existing.ID!
 
-        const result = await INSERT.into(Vehicles).entries(data)
-        return result.req.data.ID
+        await INSERT.into(Vehicles).entries(data)
+        return (data as Record<string, unknown>).ID as string
     }
 
     private async findOrCreateDriver(
@@ -284,7 +282,7 @@ export default class GatepassService extends cds.ApplicationService {
         const existing = await SELECT.one.from(Drivers).where(where) as Driver | null
         if (existing) return existing.ID!
 
-        const result = await INSERT.into(Drivers).entries(data)
-        return result.req.data.ID
+        await INSERT.into(Drivers).entries(data)
+        return (data as Record<string, unknown>).ID as string
     }
 }
