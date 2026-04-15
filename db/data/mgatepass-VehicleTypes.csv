@@ -1,0 +1,5 @@
+ID,config_ID,name,requireTransporterName,requireDriverName,requireDriverContact,requireVehicleNumber,requireDriverLicense
+a0000000-0000-0000-0000-000000000001,d0000000-0000-0000-0000-000000000001,Truck,true,true,true,true,true
+a0000000-0000-0000-0000-000000000002,d0000000-0000-0000-0000-000000000001,Tempo,true,true,true,true,false
+a0000000-0000-0000-0000-000000000003,d0000000-0000-0000-0000-000000000001,Container,true,false,false,true,false
+a0000000-0000-0000-0000-000000000004,d0000000-0000-0000-0000-000000000001,Hand Cart,false,false,false,false,false

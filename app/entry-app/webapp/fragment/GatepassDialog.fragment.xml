@@ -50,7 +50,10 @@
 
 					<core:Title text="{i18n>sectionDocuments}"/>
 					<Label text="{i18n>documentNumberInput}" required="true"/>
-					<Input id="documentNumberInput" value="{dialog>/documentNumber}"/>
+					<HBox>
+						<Input id="documentNumberInput" value="{dialog>/documentNumber}" width="100%"/>
+						<Button text="{i18n>go}" type="Emphasized" press=".onDocumentGo" class="sapUiTinyMarginBegin"/>
+					</HBox>
 
 					<core:Title text="{i18n>sectionAdditionalDetails}"/>
 					<Label
@@ -98,6 +101,7 @@
 					<Select
 						id="vehicleTypeSelect"
 						selectedKey="{dialog>/vehicleType}"
+						change=".onVehicleTypeChange"
 						forceSelection="false"
 						items="{dialog>/vehicleTypes}"
 					>
@@ -106,15 +110,15 @@
 						</items>
 					</Select>
 					<Label text="{i18n>vehicleNumber}"/>
-					<Input id="vehicleNumberInput" value="{dialog>/vehicleNumber}"/>
+					<Input id="vehicleNumberInput" value="{dialog>/vehicleNumber}" enabled="{dialog>/carrierFields/vehicleNumber}"/>
 					<Label text="{i18n>transporterName}"/>
-					<Input id="transporterInput" value="{dialog>/transporter}"/>
+					<Input id="transporterInput" value="{dialog>/transporter}" enabled="{dialog>/carrierFields/transporter}"/>
 					<Label text="{i18n>driverName}"/>
-					<Input id="driverNameInput" value="{dialog>/driverName}"/>
+					<Input id="driverNameInput" value="{dialog>/driverName}" enabled="{dialog>/carrierFields/driverName}"/>
 					<Label text="{i18n>driverLicense}"/>
-					<Input id="driverLicenseInput" value="{dialog>/driverLicense}"/>
+					<Input id="driverLicenseInput" value="{dialog>/driverLicense}" enabled="{dialog>/carrierFields/driverLicense}"/>
 					<Label text="{i18n>driverContact}"/>
-					<Input id="driverContactInput" value="{dialog>/driverContact}"/>
+					<Input id="driverContactInput" value="{dialog>/driverContact}" enabled="{dialog>/carrierFields/driverContact}"/>
 				</form:SimpleForm>
 			</VBox>
 		</content>

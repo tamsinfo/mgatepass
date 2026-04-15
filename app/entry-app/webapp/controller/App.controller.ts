@@ -5,9 +5,11 @@ import Filter from "sap/ui/model/Filter";
 import FilterOperator from "sap/ui/model/FilterOperator";
 import JSONModel from "sap/ui/model/json/JSONModel";
 import Fragment from "sap/ui/core/Fragment";
+import Label from "sap/m/Label";
 import MDialog from "sap/m/Dialog";
 import TextArea from "sap/m/TextArea";
 import MButton from "sap/m/Button";
+import VBox from "sap/m/VBox";
 import type Dialog from "sap/m/Dialog";
 import type Button from "sap/m/Button";
 import type ODataModel from "sap/ui/model/odata/v4/ODataModel";
@@ -17,6 +19,24 @@ import type Table from "sap/m/Table";
 import type DateRangeSelection from "sap/m/DateRangeSelection";
 import type Input from "sap/m/Input";
 import type Event from "sap/ui/base/Event";
+
+interface VehicleTypeConfig {
+	ID: string;
+	name: string;
+	requireTransporterName: boolean;
+	requireDriverName: boolean;
+	requireDriverContact: boolean;
+	requireVehicleNumber: boolean;
+	requireDriverLicense: boolean;
+}
+
+interface CarrierFieldState {
+	vehicleNumber: boolean;
+	transporter: boolean;
+	driverName: boolean;
+	driverLicense: boolean;
+	driverContact: boolean;
+}
 
 interface DialogFormData {
 	title: string;
@@ -37,8 +57,17 @@ interface DialogFormData {
 	driverName: string;
 	driverLicense: string;
 	driverContact: string;
-	vehicleTypes: Array<{ ID: string; name: string }>;
+	vehicleTypes: VehicleTypeConfig[];
+	carrierFields: CarrierFieldState;
 }
+
+const ALL_CARRIER_ENABLED: CarrierFieldState = {
+	vehicleNumber: true,
+	transporter: true,
+	driverName: true,
+	driverLicense: true,
+	driverContact: true
+};
 
 /**
  * @namespace mgatepass.entry.controller
@@ -47,6 +76,7 @@ export default class AppController extends BaseController {
 
 	private _pDialog: Promise<Dialog> | null = null;
 	private _weighbridgeEnabled = false;
+	private _vehicleTypes: VehicleTypeConfig[] = [];
 
 	public override onInit(): void {
 		this.initResourceBundle();
@@ -81,13 +111,16 @@ export default class AppController extends BaseController {
 
 		const oVTBinding = oModel.bindList("/VehicleTypes");
 		const aVTContexts = await oVTBinding.requestContexts();
-		const vehicleTypes = aVTContexts.map(ctx => ({
+		this._vehicleTypes = aVTContexts.map(ctx => ({
 			ID: ctx.getProperty("ID") as string,
-			name: ctx.getProperty("name") as string
+			name: ctx.getProperty("name") as string,
+			requireTransporterName: ctx.getProperty("requireTransporterName") as boolean,
+			requireDriverName: ctx.getProperty("requireDriverName") as boolean,
+			requireDriverContact: ctx.getProperty("requireDriverContact") as boolean,
+			requireVehicleNumber: ctx.getProperty("requireVehicleNumber") as boolean,
+			requireDriverLicense: ctx.getProperty("requireDriverLicense") as boolean
 		}));
 		oVTBinding.destroy();
-
-		this.getView()!.setModel(new JSONModel({ vehicleTypes }), "appConfig");
 	}
 
 	public isApprovalEnabled(sProcessType: string, sGatepassType: string, bLoaded: boolean): boolean {
@@ -157,9 +190,6 @@ export default class AppController extends BaseController {
 	}
 
 	private getDefaultFormData(isEditMode = false): DialogFormData {
-		const oConfigModel = this.getView()!.getModel("appConfig") as JSONModel | undefined;
-		const vehicleTypes = oConfigModel?.getProperty("/vehicleTypes") ?? [];
-
 		return {
 			title: this.getResourceText(isEditMode ? "editGatepassTitle" : "createGatepassTitle"),
 			isEditMode,
@@ -179,7 +209,8 @@ export default class AppController extends BaseController {
 			driverName: "",
 			driverLicense: "",
 			driverContact: "",
-			vehicleTypes
+			vehicleTypes: this._vehicleTypes,
+			carrierFields: { ...ALL_CARRIER_ENABLED }
 		};
 	}
 
@@ -216,7 +247,7 @@ export default class AppController extends BaseController {
 		formData.showReturnDate = formData.gatepassType === "Returnable";
 		formData.showCarrierSection = true;
 
-		const docs = oContext.getProperty("documents") as unknown;
+		const docs = await oContext.requestObject("documents") as unknown;
 		formData.documentNumber = this.formatDocuments(docs);
 
 		const oModel = this.getView()!.getModel() as ODataModel;
@@ -245,6 +276,10 @@ export default class AppController extends BaseController {
 			dBinding.destroy();
 		}
 
+		if (formData.vehicleType) {
+			this.applyCarrierFieldRules(formData, formData.vehicleType);
+		}
+
 		const oDialog = await this.getDialog();
 		oDialog.setModel(new JSONModel(formData), "dialog");
 		oDialog.open();
@@ -267,6 +302,47 @@ export default class AppController extends BaseController {
 			const gatepassType = model.getProperty("/gatepassType") as string;
 			model.setProperty("/showReturnDate", gatepassType === "Returnable");
 		});
+	}
+
+	public onDocumentGo(): void {
+		// will be wired to document lookup
+	}
+
+	public onVehicleTypeChange(): void {
+		this.getDialog().then(d => {
+			const model = d.getModel("dialog") as JSONModel;
+			const selectedTypeId = model.getProperty("/vehicleType") as string;
+			const data = model.getData() as DialogFormData;
+			this.applyCarrierFieldRules(data, selectedTypeId);
+			model.setData(data);
+		});
+	}
+
+	private applyCarrierFieldRules(data: DialogFormData, vehicleTypeId: string): void {
+		if (!vehicleTypeId) {
+			data.carrierFields = { ...ALL_CARRIER_ENABLED };
+			return;
+		}
+
+		const vt = this._vehicleTypes.find(t => t.ID === vehicleTypeId);
+		if (!vt) {
+			data.carrierFields = { ...ALL_CARRIER_ENABLED };
+			return;
+		}
+
+		data.carrierFields = {
+			vehicleNumber: vt.requireVehicleNumber,
+			transporter: vt.requireTransporterName,
+			driverName: vt.requireDriverName,
+			driverLicense: vt.requireDriverLicense,
+			driverContact: vt.requireDriverContact
+		};
+
+		data.vehicleNumber = vt.requireVehicleNumber ? (data.vehicleNumber === "N/A" ? "" : data.vehicleNumber) : "N/A";
+		data.transporter = vt.requireTransporterName ? (data.transporter === "N/A" ? "" : data.transporter) : "N/A";
+		data.driverName = vt.requireDriverName ? (data.driverName === "N/A" ? "" : data.driverName) : "N/A";
+		data.driverLicense = vt.requireDriverLicense ? (data.driverLicense === "N/A" ? "" : data.driverLicense) : "N/A";
+		data.driverContact = vt.requireDriverContact ? (data.driverContact === "N/A" ? "" : data.driverContact) : "N/A";
 	}
 
 	private validateDialogForm(data: DialogFormData): boolean {
@@ -313,21 +389,21 @@ export default class AppController extends BaseController {
 			oAction.setParameter("entryGate", null);
 			oAction.setParameter("expectedReturnDate", data.expectedReturnDate || null);
 
-			if (data.showCarrierSection && data.vehicleNumber?.trim()) {
+			if (data.showCarrierSection && data.vehicleNumber?.trim() && data.vehicleNumber !== "N/A") {
 				oAction.setParameter("vehicle", {
 					vehicleNumber: data.vehicleNumber.trim(),
 					type: data.vehicleType || null,
-					transporter: data.transporter?.trim() || null
+					transporter: data.transporter !== "N/A" ? (data.transporter?.trim() || null) : null
 				});
 			} else {
 				oAction.setParameter("vehicle", null);
 			}
 
-			if (data.showCarrierSection && data.driverName?.trim()) {
+			if (data.showCarrierSection && data.driverName?.trim() && data.driverName !== "N/A") {
 				oAction.setParameter("driver", {
 					name: data.driverName.trim(),
-					licenseNumber: data.driverLicense?.trim() || null,
-					contactNumber: data.driverContact?.trim() || null
+					licenseNumber: data.driverLicense !== "N/A" ? (data.driverLicense?.trim() || null) : null,
+					contactNumber: data.driverContact !== "N/A" ? (data.driverContact?.trim() || null) : null
 				});
 			} else {
 				oAction.setParameter("driver", null);
@@ -440,7 +516,14 @@ export default class AppController extends BaseController {
 		const oCancelDialog = new MDialog({
 			title: this.getResourceText("cancelDialogTitle"),
 			type: "Message",
-			content: [oTextArea],
+			content: [
+				new VBox({
+					items: [
+						new Label({ text: this.getResourceText("remarks") }),
+						oTextArea
+					]
+				})
+			],
 			beginButton: new MButton({
 				text: this.getResourceText("confirm"),
 				type: "Emphasized",
