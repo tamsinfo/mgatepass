@@ -122,20 +122,31 @@
 					<Input id="driverLicenseInput" value="{dialog>/driverLicense}" enabled="{dialog>/carrierFields/driverLicense}"/>
 					<Label text="{i18n>driverContact}"/>
 					<Input id="driverContactInput" value="{dialog>/driverContact}" enabled="{dialog>/carrierFields/driverContact}"/>
+					<Label text="{i18n>entryGate}"/>
+					<Select
+						id="entryGateSelect"
+						selectedKey="{dialog>/entryGate}"
+						forceSelection="false"
+						items="{dialog>/gates}"
+					>
+						<items>
+							<core:Item key="{dialog>ID}" text="{dialog>name}"/>
+						</items>
+					</Select>
 				</form:SimpleForm>
 			</VBox>
 		</content>
 		<buttons>
 			<Button
+				text="{i18n>sendForApprovalBtn}"
+				type="Success"
+				press=".onSendForApprovalFromDialog"
+				visible="{dialog>/isEditMode}"
+			/>
+			<Button
 				text="{i18n>save}"
 				type="Emphasized"
 				press=".onSaveGatepass"
-			/>
-			<Button
-				text="{i18n>sendForApprovalBtn}"
-				type="Ghost"
-				press=".onSendForApprovalFromDialog"
-				visible="{dialog>/isEditMode}"
 			/>
 			<Button
 				text="{i18n>close}"

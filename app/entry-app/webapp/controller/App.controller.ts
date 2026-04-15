@@ -59,7 +59,9 @@ interface DialogFormData {
 	driverName: string;
 	driverLicense: string;
 	driverContact: string;
+	entryGate: string;
 	vehicleTypes: VehicleTypeConfig[];
+	gates: Array<{ ID: string; name: string }>;
 	carrierFields: CarrierFieldState;
 }
 
@@ -79,6 +81,7 @@ export default class AppController extends BaseController {
 	private _pDialog: Promise<Dialog> | null = null;
 	private _weighbridgeEnabled = false;
 	private _vehicleTypes: VehicleTypeConfig[] = [];
+	private _gates: Array<{ ID: string; name: string }> = [];
 
 	public override onInit(): void {
 		this.initResourceBundle();
@@ -123,6 +126,16 @@ export default class AppController extends BaseController {
 			requireDriverLicense: ctx.getProperty("requireDriverLicense") as boolean
 		}));
 		oVTBinding.destroy();
+
+		const oGateBinding = oModel.bindList("/Gates", undefined, undefined, [
+			new Filter("allowEntry", FilterOperator.EQ, true)
+		]);
+		const aGateContexts = await oGateBinding.requestContexts();
+		this._gates = aGateContexts.map(ctx => ({
+			ID: ctx.getProperty("ID") as string,
+			name: ctx.getProperty("name") as string
+		}));
+		oGateBinding.destroy();
 	}
 
 	public isApprovalEnabled(sProcessType: string, sGatepassType: string, bLoaded: boolean): boolean {
@@ -211,7 +224,9 @@ export default class AppController extends BaseController {
 			driverName: "",
 			driverLicense: "",
 			driverContact: "",
+			entryGate: "",
 			vehicleTypes: this._vehicleTypes,
+			gates: this._gates,
 			carrierFields: { ...ALL_CARRIER_ENABLED }
 		};
 	}
@@ -249,6 +264,7 @@ export default class AppController extends BaseController {
 		formData.expectedReturnDate = (oContext.getProperty("expectedReturnDate") as string) ?? "";
 		formData.showReturnDate = formData.gatepassType === "Returnable";
 		formData.showCarrierSection = true;
+		formData.entryGate = (oContext.getProperty("entryGate_ID") as string) ?? "";
 
 		const rawDocs = await oContext.requestObject("documents") as unknown;
 		const documents: string[] = Array.isArray(rawDocs)
@@ -411,7 +427,7 @@ export default class AppController extends BaseController {
 			oAction.setParameter("gatepassType", data.gatepassType);
 			oAction.setParameter("documents", documents);
 			oAction.setParameter("weighbridgeRequired", data.weighbridgeRequired);
-			oAction.setParameter("entryGate", null);
+			oAction.setParameter("entryGate", data.entryGate || null);
 			oAction.setParameter("expectedReturnDate", data.expectedReturnDate || null);
 
 			if (data.showCarrierSection && data.vehicleNumber?.trim() && data.vehicleNumber !== "N/A") {
@@ -445,30 +461,39 @@ export default class AppController extends BaseController {
 		}
 	}
 
-	private async updateGatepass(data: DialogFormData, documents: string[]): Promise<void> {
+	private async updateGatepass(data: DialogFormData, _documents: string[]): Promise<void> {
 		try {
 			const oModel = this.getView()!.getModel() as ODataModel;
+			const oAction = oModel.bindContext(
+				`${data.editPassPath}/GatepassService.updateGatepass(...)`
+			) as ODataContextBinding;
 
-			const updateData: Record<string, unknown> = {
-				processType: data.processType,
-				gatepassType: data.gatepassType,
-				documents,
-				weighbridgeRequired: data.weighbridgeRequired,
-				expectedReturnDate: data.expectedReturnDate || null
-			};
+			oAction.setParameter("weighbridgeRequired", data.weighbridgeRequired);
+			oAction.setParameter("entryGate", data.entryGate || null);
+			oAction.setParameter("expectedReturnDate", data.expectedReturnDate || null);
 
-			const oBinding = oModel.bindContext(data.editPassPath!, undefined, {
-				$$updateGroupId: "gatepassUpdate"
-			});
-			await oBinding.requestObject();
-			const ctx = oBinding.getBoundContext();
-
-			for (const [key, val] of Object.entries(updateData)) {
-				ctx.setProperty(key, val);
+			if (data.showCarrierSection && data.vehicleNumber?.trim() && data.vehicleNumber !== "N/A") {
+				oAction.setParameter("vehicle", {
+					vehicleNumber: data.vehicleNumber.trim(),
+					type: data.vehicleType || null,
+					transporter: data.transporter !== "N/A" ? (data.transporter?.trim() || null) : null
+				});
+			} else {
+				oAction.setParameter("vehicle", null);
 			}
 
-			await oModel.submitBatch("gatepassUpdate");
-			oBinding.destroy();
+			if (data.showCarrierSection && data.driverName?.trim() && data.driverName !== "N/A") {
+				oAction.setParameter("driver", {
+					name: data.driverName.trim(),
+					licenseNumber: data.driverLicense !== "N/A" ? (data.driverLicense?.trim() || null) : null,
+					contactNumber: data.driverContact !== "N/A" ? (data.driverContact?.trim() || null) : null
+				});
+			} else {
+				oAction.setParameter("driver", null);
+			}
+
+			await oAction.execute();
+			oAction.destroy();
 
 			MessageToast.show(this.getResourceText("gatepassUpdated"));
 			this.onCloseGatepassDialog();

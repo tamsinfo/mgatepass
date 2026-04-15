@@ -138,10 +138,10 @@ export default class GatepassService extends cds.ApplicationService {
         })
 
         this.on('sendForApproval', 'Passes', async (req) => {
-            const passId = req.params[0] as { ID: string }
+            const passId = req.params[0] as string
 
-            const pass = await this.getPass(passId.ID)
-            if (!pass) return req.error(404, `Pass ${passId.ID} not found`)
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
 
             if (pass.status !== 'Draft') {
                 return req.error(409, `Pass can only be sent for approval from Draft status, current status is '${pass.status}'`)
@@ -151,17 +151,21 @@ export default class GatepassService extends cds.ApplicationService {
                 return req.error(422, 'Vehicle and driver must be linked before sending for approval')
             }
 
+            if (!pass.entryGate_ID) {
+                return req.error(422, 'Entry gate must be selected before sending for approval')
+            }
+
             const { Passes } = this.entities
-            await this.updatePassStatus(passId.ID, 'PendingApproval', 'SentForApproval', pass.status, req.user.id, null)
-            return SELECT.one.from(Passes).where({ ID: passId.ID })
+            await this.updatePassStatus(passId, 'PendingApproval', 'SentForApproval', pass.status, req.user.id, null)
+            return SELECT.one.from(Passes).where({ ID: passId })
         })
 
         this.on('approvePass', 'Passes', async (req) => {
-            const passId = req.params[0] as { ID: string }
+            const passId = req.params[0] as string
             const { remarks } = req.data as { remarks?: string | null }
 
-            const pass = await this.getPass(passId.ID)
-            if (!pass) return req.error(404, `Pass ${passId.ID} not found`)
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
 
             if (pass.status !== 'PendingApproval') {
                 return req.error(409, `Pass can only be approved from PendingApproval status, current status is '${pass.status}'`)
@@ -171,41 +175,125 @@ export default class GatepassService extends cds.ApplicationService {
                 return req.error(422, 'Vehicle and driver must be linked before approval')
             }
 
+            if (!pass.entryGate_ID) {
+                return req.error(422, 'Entry gate must be selected before approval')
+            }
+
             const { Passes } = this.entities
-            await this.updatePassStatus(passId.ID, 'Approved', 'Approved', pass.status, req.user.id, remarks)
-            return SELECT.one.from(Passes).where({ ID: passId.ID })
+            await this.updatePassStatus(passId, 'Approved', 'Approved', pass.status, req.user.id, remarks)
+            return SELECT.one.from(Passes).where({ ID: passId })
         })
 
         this.on('rejectPass', 'Passes', async (req) => {
-            const passId = req.params[0] as { ID: string }
+            const passId = req.params[0] as string
             const { remarks } = req.data as { remarks?: string | null }
 
-            const pass = await this.getPass(passId.ID)
-            if (!pass) return req.error(404, `Pass ${passId.ID} not found`)
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
 
             if (pass.status !== 'PendingApproval') {
                 return req.error(409, `Pass can only be rejected from PendingApproval status, current status is '${pass.status}'`)
             }
 
             const { Passes } = this.entities
-            await this.updatePassStatus(passId.ID, 'Rejected', 'Rejected', pass.status, req.user.id, remarks)
-            return SELECT.one.from(Passes).where({ ID: passId.ID })
+            await this.updatePassStatus(passId, 'Rejected', 'Rejected', pass.status, req.user.id, remarks)
+            return SELECT.one.from(Passes).where({ ID: passId })
         })
 
         this.on('cancelPass', 'Passes', async (req) => {
-            const passId = req.params[0] as { ID: string }
+            const passId = req.params[0] as string
             const { remarks } = req.data as { remarks?: string | null }
 
-            const pass = await this.getPass(passId.ID)
-            if (!pass) return req.error(404, `Pass ${passId.ID} not found`)
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
 
             if (pass.status === 'Cancelled') {
                 return req.error(409, 'Pass is already cancelled')
             }
 
             const { Passes } = this.entities
-            await this.updatePassStatus(passId.ID, 'Cancelled', 'Cancelled', pass.status!, req.user.id, remarks)
-            return SELECT.one.from(Passes).where({ ID: passId.ID })
+            await this.updatePassStatus(passId, 'Cancelled', 'Cancelled', pass.status!, req.user.id, remarks)
+            return SELECT.one.from(Passes).where({ ID: passId })
+        })
+
+        this.on('updateGatepass', 'Passes', async (req) => {
+            const passId = req.params[0] as string
+            const { weighbridgeRequired, entryGate, expectedReturnDate, vehicle, driver } =
+                req.data as { weighbridgeRequired?: boolean; entryGate?: string | null; expectedReturnDate?: string | null; vehicle?: { vehicleNumber?: string; type?: string; transporter?: string } | null; driver?: { name?: string; licenseNumber?: string; contactNumber?: string } | null }
+
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
+
+            if (pass.status !== 'Draft') {
+                return req.error(409, `Pass can only be updated in Draft status, current status is '${pass.status}'`)
+            }
+
+            const updateData: Record<string, unknown> = {}
+
+            if (weighbridgeRequired !== undefined) {
+                updateData.weighbridgeRequired = weighbridgeRequired
+
+                if (weighbridgeRequired && !pass.weight_ID) {
+                    const { Weights } = this.entities
+                    const weightEntry: Record<string, unknown> = { entryWeight: null, exitWeight: null }
+                    await INSERT.into(Weights).entries(weightEntry)
+                    updateData.weight_ID = weightEntry.ID as string
+                }
+            }
+
+            if (expectedReturnDate !== undefined) {
+                updateData.expectedReturnDate = expectedReturnDate || null
+            }
+
+            if (entryGate !== undefined) {
+                if (entryGate) {
+                    const { Gates } = this.entities
+                    const gate = await SELECT.one.from(Gates).where({ ID: entryGate })
+                    if (!gate) return req.error(400, 'Invalid entry gate')
+                }
+                updateData.entryGate_ID = entryGate || null
+            }
+
+            if (vehicle !== undefined) {
+                if (vehicle?.vehicleNumber?.trim()) {
+                    updateData.vehicle_ID = await this.findOrCreateVehicle({
+                        vehicleNumber: vehicle.vehicleNumber.trim().toUpperCase(),
+                        type_ID: vehicle.type || null,
+                        transporter: vehicle.transporter?.trim() || null
+                    })
+                } else {
+                    updateData.vehicle_ID = null
+                }
+            }
+
+            if (driver !== undefined) {
+                if (driver?.name?.trim()) {
+                    updateData.driver_ID = await this.findOrCreateDriver({
+                        name: driver.name.trim(),
+                        licenseNumber: driver.licenseNumber?.trim() || null,
+                        contactNumber: driver.contactNumber?.trim() || null
+                    })
+                } else {
+                    updateData.driver_ID = null
+                }
+            }
+
+            if (Object.keys(updateData).length > 0) {
+                const { Passes, PassAuditLogs } = this.entities
+                await UPDATE(Passes).set(updateData).where({ ID: passId })
+                await INSERT.into(PassAuditLogs).entries({
+                    pass_ID: passId,
+                    action: 'Updated',
+                    performedAt: new Date().toISOString(),
+                    performedBy: req.user.id,
+                    oldValue: JSON.stringify({ vehicle_ID: pass.vehicle_ID, driver_ID: pass.driver_ID, entryGate_ID: pass.entryGate_ID }),
+                    newValue: JSON.stringify(updateData),
+                    remarks: null
+                } as Partial<PassAuditLog>)
+            }
+
+            const { Passes } = this.entities
+            return SELECT.one.from(Passes).where({ ID: passId })
         })
 
         await super.init()
