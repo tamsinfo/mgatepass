@@ -25,6 +25,7 @@
 						selectedKey="{dialog>/processType}"
 						change=".onProcessTypeChange"
 						forceSelection="false"
+						enabled="{= !${dialog>/isEditMode}}"
 					>
 						<items>
 							<core:Item key="" text=""/>
@@ -38,6 +39,7 @@
 						selectedKey="{dialog>/gatepassType}"
 						change=".onGatepassTypeChange"
 						forceSelection="false"
+						enabled="{= !${dialog>/isEditMode}}"
 					>
 						<items>
 							<core:Item key="" text=""/>
@@ -51,7 +53,8 @@
 					<core:Title text="{i18n>sectionDocuments}"/>
 					<Label text="{i18n>documentNumberInput}" required="true"/>
 					<HBox>
-						<Input id="documentNumberInput" value="{dialog>/documentNumber}" width="100%"/>
+						<MultiInput id="documentNumberInput" width="100%" submit=".onAddDocument" enabled="{= !${dialog>/isEditMode}}"/>
+						<Button text="{i18n>add}" press=".onAddDocument" class="sapUiTinyMarginBegin" enabled="{= !${dialog>/isEditMode}}"/>
 						<Button text="{i18n>go}" type="Emphasized" press=".onDocumentGo" class="sapUiTinyMarginBegin"/>
 					</HBox>
 

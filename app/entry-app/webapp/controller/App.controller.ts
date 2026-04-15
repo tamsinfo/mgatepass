@@ -10,8 +10,10 @@ import MDialog from "sap/m/Dialog";
 import TextArea from "sap/m/TextArea";
 import MButton from "sap/m/Button";
 import VBox from "sap/m/VBox";
+import Token from "sap/m/Token";
 import type Dialog from "sap/m/Dialog";
 import type Button from "sap/m/Button";
+import type MultiInput from "sap/m/MultiInput";
 import type ODataModel from "sap/ui/model/odata/v4/ODataModel";
 import type ODataListBinding from "sap/ui/model/odata/v4/ODataListBinding";
 import type ODataContextBinding from "sap/ui/model/odata/v4/ODataContextBinding";
@@ -45,7 +47,7 @@ interface DialogFormData {
 	editPassPath: string | null;
 	processType: string;
 	gatepassType: string;
-	documentNumber: string;
+	documents: string[];
 	weighbridgeEnabled: boolean;
 	weighbridgeRequired: boolean;
 	showReturnDate: boolean;
@@ -197,7 +199,7 @@ export default class AppController extends BaseController {
 			editPassPath: null,
 			processType: "",
 			gatepassType: "",
-			documentNumber: "",
+			documents: [],
 			weighbridgeEnabled: this._weighbridgeEnabled,
 			weighbridgeRequired: false,
 			showReturnDate: false,
@@ -232,6 +234,7 @@ export default class AppController extends BaseController {
 		const oDialog = await this.getDialog();
 		oDialog.setModel(new JSONModel(this.getDefaultFormData()), "dialog");
 		oDialog.open();
+		(this.byId("documentNumberInput") as MultiInput).removeAllTokens();
 	}
 
 	public async onEditPass(oEvent: Event): Promise<void> {
@@ -247,8 +250,10 @@ export default class AppController extends BaseController {
 		formData.showReturnDate = formData.gatepassType === "Returnable";
 		formData.showCarrierSection = true;
 
-		const docs = await oContext.requestObject("documents") as unknown;
-		formData.documentNumber = this.formatDocuments(docs);
+		const rawDocs = await oContext.requestObject("documents") as unknown;
+		const documents: string[] = Array.isArray(rawDocs)
+			? rawDocs.map((d: unknown) => typeof d === "object" && d !== null ? String((d as Record<string, unknown>).value ?? "") : String(d)).filter(Boolean)
+			: [];
 
 		const oModel = this.getView()!.getModel() as ODataModel;
 
@@ -283,6 +288,12 @@ export default class AppController extends BaseController {
 		const oDialog = await this.getDialog();
 		oDialog.setModel(new JSONModel(formData), "dialog");
 		oDialog.open();
+
+		const oDocInput = this.byId("documentNumberInput") as MultiInput;
+		oDocInput.removeAllTokens();
+		for (const doc of documents) {
+			oDocInput.addToken(new Token({ key: doc, text: doc }));
+		}
 	}
 
 	public onProcessTypeChange(): void {
@@ -302,6 +313,14 @@ export default class AppController extends BaseController {
 			const gatepassType = model.getProperty("/gatepassType") as string;
 			model.setProperty("/showReturnDate", gatepassType === "Returnable");
 		});
+	}
+
+	public onAddDocument(): void {
+		const oInput = this.byId("documentNumberInput") as MultiInput;
+		const sValue = oInput.getValue()?.trim();
+		if (!sValue) return;
+		oInput.addToken(new Token({ key: sValue, text: sValue }));
+		oInput.setValue("");
 	}
 
 	public onDocumentGo(): void {
@@ -345,7 +364,7 @@ export default class AppController extends BaseController {
 		data.driverContact = vt.requireDriverContact ? (data.driverContact === "N/A" ? "" : data.driverContact) : "N/A";
 	}
 
-	private validateDialogForm(data: DialogFormData): boolean {
+	private validateDialogForm(data: DialogFormData, documents: string[]): boolean {
 		if (!data.processType) {
 			MessageBox.error(this.getResourceText("validationProcessType"));
 			return false;
@@ -354,7 +373,7 @@ export default class AppController extends BaseController {
 			MessageBox.error(this.getResourceText("validationGatepassType"));
 			return false;
 		}
-		if (!data.documentNumber?.trim()) {
+		if (documents.length === 0) {
 			MessageBox.error(this.getResourceText("validationDocumentNumber"));
 			return false;
 		}
@@ -366,9 +385,15 @@ export default class AppController extends BaseController {
 		const oDialogModel = oDialog.getModel("dialog") as JSONModel;
 		const data = oDialogModel.getData() as DialogFormData;
 
-		if (!this.validateDialogForm(data)) return;
+		const oDocInput = this.byId("documentNumberInput") as MultiInput;
+		const pendingValue = oDocInput.getValue()?.trim();
+		if (pendingValue) {
+			oDocInput.addToken(new Token({ key: pendingValue, text: pendingValue }));
+			oDocInput.setValue("");
+		}
+		const documents = oDocInput.getTokens().map(t => t.getKey());
 
-		const documents = data.documentNumber.split(",").map(d => d.trim()).filter(Boolean);
+		if (!this.validateDialogForm(data, documents)) return;
 
 		if (data.isEditMode && data.editPassPath) {
 			await this.updateGatepass(data, documents);
