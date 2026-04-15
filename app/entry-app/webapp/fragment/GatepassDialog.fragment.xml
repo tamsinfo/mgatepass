@@ -55,7 +55,7 @@
 					<HBox>
 						<MultiInput id="documentNumberInput" width="100%" submit=".onAddDocument" enabled="{= !${dialog>/isEditMode}}"/>
 						<Button text="{i18n>add}" press=".onAddDocument" class="sapUiTinyMarginBegin" enabled="{= !${dialog>/isEditMode}}"/>
-						<Button text="{i18n>go}" type="Emphasized" press=".onDocumentGo" class="sapUiTinyMarginBegin"/>
+						<Button text="{i18n>go}" type="Emphasized" press=".onDocumentGo" class="sapUiTinyMarginBegin" enabled="{= !${dialog>/isEditMode}}"/>
 					</HBox>
 
 					<core:Title text="{i18n>sectionAdditionalDetails}"/>
@@ -122,6 +122,7 @@
 					<Input id="driverLicenseInput" value="{dialog>/driverLicense}" enabled="{dialog>/carrierFields/driverLicense}"/>
 					<Label text="{i18n>driverContact}"/>
 					<Input id="driverContactInput" value="{dialog>/driverContact}" enabled="{dialog>/carrierFields/driverContact}"/>
+					<core:Title text=""/>
 					<Label text="{i18n>entryGate}"/>
 					<Select
 						id="entryGateSelect"
@@ -141,7 +142,13 @@
 				text="{i18n>sendForApprovalBtn}"
 				type="Success"
 				press=".onSendForApprovalFromDialog"
-				visible="{dialog>/isEditMode}"
+				visible="{= ${dialog>/isEditMode} &amp;&amp; ${dialog>/approvalRequired}}"
+			/>
+			<Button
+				text="{i18n>finaliseGatepass}"
+				type="Success"
+				press=".onFinaliseGatepassFromDialog"
+				visible="{= ${dialog>/isEditMode} &amp;&amp; !${dialog>/approvalRequired}}"
 			/>
 			<Button
 				text="{i18n>save}"

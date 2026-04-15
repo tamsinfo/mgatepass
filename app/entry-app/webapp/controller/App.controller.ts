@@ -60,6 +60,7 @@ interface DialogFormData {
 	driverLicense: string;
 	driverContact: string;
 	entryGate: string;
+	approvalRequired: boolean;
 	vehicleTypes: VehicleTypeConfig[];
 	gates: Array<{ ID: string; name: string }>;
 	carrierFields: CarrierFieldState;
@@ -199,9 +200,12 @@ export default class AppController extends BaseController {
 		this.applyFilters();
 	}
 
+	public onRefreshTable(): void {
+		this.applyFilters();
+	}
+
 	private refreshTable(): void {
-		const oTable = this.byId("passesTable") as Table;
-		(oTable.getBinding("items") as ODataListBinding).refresh();
+		this.applyFilters();
 	}
 
 	private getDefaultFormData(isEditMode = false): DialogFormData {
@@ -225,6 +229,7 @@ export default class AppController extends BaseController {
 			driverLicense: "",
 			driverContact: "",
 			entryGate: "",
+			approvalRequired: false,
 			vehicleTypes: this._vehicleTypes,
 			gates: this._gates,
 			carrierFields: { ...ALL_CARRIER_ENABLED }
@@ -265,6 +270,9 @@ export default class AppController extends BaseController {
 		formData.showReturnDate = formData.gatepassType === "Returnable";
 		formData.showCarrierSection = true;
 		formData.entryGate = (oContext.getProperty("entryGate_ID") as string) ?? "";
+
+		const rulesModel = this.getView()!.getModel("approvalRules") as JSONModel;
+		formData.approvalRequired = rulesModel?.getProperty(`/rules/${formData.processType}_${formData.gatepassType}`) === true;
 
 		const rawDocs = await oContext.requestObject("documents") as unknown;
 		const documents: string[] = Array.isArray(rawDocs)
@@ -320,6 +328,7 @@ export default class AppController extends BaseController {
 			if (!isEditMode) {
 				model.setProperty("/showCarrierSection", processType === "Inward");
 			}
+			this.updateApprovalRequired(model);
 		});
 	}
 
@@ -328,7 +337,16 @@ export default class AppController extends BaseController {
 			const model = d.getModel("dialog") as JSONModel;
 			const gatepassType = model.getProperty("/gatepassType") as string;
 			model.setProperty("/showReturnDate", gatepassType === "Returnable");
+			this.updateApprovalRequired(model);
 		});
+	}
+
+	private updateApprovalRequired(dialogModel: JSONModel): void {
+		const processType = dialogModel.getProperty("/processType") as string;
+		const gatepassType = dialogModel.getProperty("/gatepassType") as string;
+		const rulesModel = this.getView()!.getModel("approvalRules") as JSONModel;
+		const required = rulesModel?.getProperty(`/rules/${processType}_${gatepassType}`) === true;
+		dialogModel.setProperty("/approvalRequired", required);
 	}
 
 	public onAddDocument(): void {
@@ -528,6 +546,28 @@ export default class AppController extends BaseController {
 				}
 			}
 		});
+	}
+
+	public async onFinaliseGatepassFromDialog(): Promise<void> {
+		const oDialog = await this.getDialog();
+		const oDialogModel = oDialog.getModel("dialog") as JSONModel;
+		const data = oDialogModel.getData() as DialogFormData;
+
+		if (!data.editPassPath) return;
+
+		try {
+			const oModel = this.getView()!.getModel() as ODataModel;
+			const oAction = oModel.bindContext(
+				`${data.editPassPath}/GatepassService.finaliseGatepass(...)`
+			);
+			await oAction.execute();
+			oAction.destroy();
+			MessageToast.show(this.getResourceText("gatepassFinalised"));
+			this.onCloseGatepassDialog();
+			this.refreshTable();
+		} catch {
+			MessageBox.error(this.getResourceText("gatepassFinaliseFailed"));
+		}
 	}
 
 	public async onCloseGatepassDialog(): Promise<void> {

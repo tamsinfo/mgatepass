@@ -36,6 +36,7 @@ type AuditAction : String enum {
     EntryPerformed;
     ExitPerformed;
     Updated;
+    Finalised;
     Printed;
 };
 

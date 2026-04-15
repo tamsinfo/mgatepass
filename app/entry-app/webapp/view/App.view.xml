@@ -12,6 +12,12 @@
 					type="Emphasized"
 					press=".onCreateGatepass"
 				/>
+				<Button
+					icon="sap-icon://refresh"
+					type="Transparent"
+					press=".onRefreshTable"
+					tooltip="{i18n>refresh}"
+				/>
 			</headerContent>
 			<content>
 				<Panel class="sapUiSmallMarginBottom">

@@ -20,36 +20,6 @@ const PASS_PREFIX: Record<string, string> = {
 
 export default class GatepassService extends cds.ApplicationService {
     async init() {
-        this.before('UPDATE', 'Passes', async (req) => {
-            const data = req.data as Partial<Pass>
-
-            const pass = await this.getPass(data.ID!)
-            if (pass?.status === 'PendingApproval') {
-                return req.error(403, 'Pass cannot be updated while pending approval')
-            }
-
-            if ('passNumber' in data) {
-                return req.error(400, 'Pass number cannot be modified')
-            }
-
-            if ('processType' in data && !data.processType) {
-                return req.error(400, 'Process type cannot be removed')
-            }
-            if ('gatepassType' in data && !data.gatepassType) {
-                return req.error(400, 'Gatepass type cannot be removed')
-            }
-            if ('documentType' in data && !data.documentType) {
-                return req.error(400, 'Document type cannot be removed')
-            }
-
-            if ('documents' in data) {
-                const docs = data.documents
-                if (!docs || docs.length === 0 || docs.every(d => !d?.trim())) {
-                    return req.error(400, 'Document numbers cannot be removed')
-                }
-            }
-        })
-
         this.on('createGatepass', async (req) => {
             const {
                 processType, gatepassType, documents,
@@ -157,6 +127,29 @@ export default class GatepassService extends cds.ApplicationService {
 
             const { Passes } = this.entities
             await this.updatePassStatus(passId, 'PendingApproval', 'SentForApproval', pass.status, req.user.id, null)
+            return SELECT.one.from(Passes).where({ ID: passId })
+        })
+
+        this.on('finaliseGatepass', 'Passes', async (req) => {
+            const passId = req.params[0] as string
+
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
+
+            if (pass.status !== 'Draft') {
+                return req.error(409, `Pass can only be finalised from Draft status, current status is '${pass.status}'`)
+            }
+
+            if (!pass.vehicle_ID || !pass.driver_ID) {
+                return req.error(422, 'Vehicle and driver must be linked before finalising')
+            }
+
+            if (!pass.entryGate_ID) {
+                return req.error(422, 'Entry gate must be selected before finalising')
+            }
+
+            const { Passes } = this.entities
+            await this.updatePassStatus(passId, 'Approved', 'Finalised', pass.status, req.user.id, null)
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 

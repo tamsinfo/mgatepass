@@ -19,11 +19,7 @@ service AdminService @(requires: 'Administrator') {
     entity Vehicles as projection on mgatepass.Vehicles;
     entity Drivers as projection on mgatepass.Drivers;
 
-    @(restrict: [
-        { grant: 'READ', to: 'Administrator' },
-        { grant: 'UPDATE', to: 'Administrator' }
-    ])
-    entity Passes as projection on mgatepass.Passes;
+    @readonly entity Passes as projection on mgatepass.Passes;
 
     @(restrict: [
         { grant: 'READ', to: 'Administrator' },

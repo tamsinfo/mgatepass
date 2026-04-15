@@ -11,13 +11,13 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
     @readonly entity PassAuditLogs as projection on mgatepass.PassAuditLogs;
 
     @(restrict: [
-        { grant: 'READ',            to: ['Administrator', 'WeighbridgeOperator', 'GateOperator', 'Approver'] },
-        { grant: 'UPDATE',          to: ['Administrator', 'GateOperator', 'Approver'] },
-        { grant: 'sendForApproval', to: ['Administrator', 'GateOperator'] },
-        { grant: 'approvePass',     to: ['Administrator', 'Approver'] },
-        { grant: 'rejectPass',      to: ['Administrator', 'Approver'] },
-        { grant: 'cancelPass',      to: ['Administrator', 'GateOperator', 'Approver'] },
-        { grant: 'updateGatepass',  to: ['Administrator', 'GateOperator'] }
+        { grant: 'READ',              to: ['Administrator', 'WeighbridgeOperator', 'GateOperator', 'Approver'] },
+        { grant: 'sendForApproval',   to: ['Administrator', 'GateOperator'] },
+        { grant: 'approvePass',       to: ['Administrator', 'Approver'] },
+        { grant: 'rejectPass',        to: ['Administrator', 'Approver'] },
+        { grant: 'cancelPass',        to: ['Administrator', 'GateOperator', 'Approver'] },
+        { grant: 'updateGatepass',    to: ['Administrator', 'GateOperator'] },
+        { grant: 'finaliseGatepass',  to: ['Administrator', 'GateOperator'] }
     ])
     entity Passes as projection on mgatepass.Passes
         actions {
@@ -25,6 +25,7 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
             action approvePass(remarks : String(500)) returns Passes;
             action rejectPass(remarks : String(500)) returns Passes;
             action cancelPass(remarks : String(500)) returns Passes;
+            action finaliseGatepass() returns Passes;
             action updateGatepass(
                 weighbridgeRequired : Boolean,
                 entryGate           : UUID,
