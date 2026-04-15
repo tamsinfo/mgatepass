@@ -117,8 +117,11 @@ export default class GatepassService extends cds.ApplicationService {
                 return req.error(409, `Pass can only be sent for approval from Draft status, current status is '${pass.status}'`)
             }
 
-            if (!pass.vehicle_ID || !pass.driver_ID) {
-                return req.error(422, 'Vehicle and driver must be linked before sending for approval')
+            if (!pass.vehicle_ID) {
+                return req.error(422, 'Vehicle must be linked before sending for approval')
+            }
+            if (await this.isDriverRequired(pass.vehicle_ID) && !pass.driver_ID) {
+                return req.error(422, 'Driver must be linked before sending for approval')
             }
 
             if (!pass.entryGate_ID) {
@@ -140,8 +143,11 @@ export default class GatepassService extends cds.ApplicationService {
                 return req.error(409, `Pass can only be finalised from Draft status, current status is '${pass.status}'`)
             }
 
-            if (!pass.vehicle_ID || !pass.driver_ID) {
-                return req.error(422, 'Vehicle and driver must be linked before finalising')
+            if (!pass.vehicle_ID) {
+                return req.error(422, 'Vehicle must be linked before finalising')
+            }
+            if (await this.isDriverRequired(pass.vehicle_ID) && !pass.driver_ID) {
+                return req.error(422, 'Driver must be linked before finalising')
             }
 
             if (!pass.entryGate_ID) {
@@ -164,8 +170,11 @@ export default class GatepassService extends cds.ApplicationService {
                 return req.error(409, `Pass can only be approved from PendingApproval status, current status is '${pass.status}'`)
             }
 
-            if (!pass.vehicle_ID || !pass.driver_ID) {
-                return req.error(422, 'Vehicle and driver must be linked before approval')
+            if (!pass.vehicle_ID) {
+                return req.error(422, 'Vehicle must be linked before approval')
+            }
+            if (await this.isDriverRequired(pass.vehicle_ID) && !pass.driver_ID) {
+                return req.error(422, 'Driver must be linked before approval')
             }
 
             if (!pass.entryGate_ID) {
@@ -335,6 +344,14 @@ export default class GatepassService extends cds.ApplicationService {
         }
 
         return `${prefix}-${String(seq).padStart(8, '0')}`
+    }
+
+    private async isDriverRequired(vehicleId: string): Promise<boolean> {
+        const { Vehicles, VehicleTypes } = this.entities
+        const vehicle = await SELECT.one.from(Vehicles).columns('type_ID').where({ ID: vehicleId })
+        if (!vehicle?.type_ID) return true
+        const vType = await SELECT.one.from(VehicleTypes).columns('requireDriverName').where({ ID: vehicle.type_ID })
+        return vType?.requireDriverName !== false
     }
 
     private async findOrCreateVehicle(

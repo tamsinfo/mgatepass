@@ -95,9 +95,14 @@ export default class AppController extends BaseController {
 		const oModel = this.getView()!.getModel() as ODataModel;
 		try {
 			await oModel.submitBatch("configUpdate");
-			MessageToast.show("Configuration saved.");
-		} catch {
-			MessageBox.error("Failed to save configuration.");
+			if (oModel.hasPendingChanges("configUpdate")) {
+				MessageBox.error("Failed to save. Please correct any errors and try again.");
+			} else {
+				MessageToast.show("Configuration saved.");
+			}
+		} catch (err: unknown) {
+			const sMessage = err instanceof Error ? err.message : "Failed to save configuration.";
+			MessageBox.error(sMessage);
 		}
 	}
 }

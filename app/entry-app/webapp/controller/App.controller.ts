@@ -162,9 +162,7 @@ export default class AppController extends BaseController {
 		const oBinding = oTable?.getBinding("items") as ODataListBinding;
 		if (!oBinding) return;
 
-		const aFilters: Filter[] = [
-			new Filter("status", FilterOperator.EQ, "Draft")
-		];
+		const aFilters: Filter[] = [];
 
 		const oDateRange = this.byId("dateFilter") as DateRangeSelection;
 		const dFrom = oDateRange?.getDateValue();
@@ -186,7 +184,7 @@ export default class AppController extends BaseController {
 			aFilters.push(new Filter("passNumber", FilterOperator.Contains, sPassNumber));
 		}
 
-		oBinding.filter(new Filter({ filters: aFilters, and: true }));
+		oBinding.filter(aFilters.length ? aFilters : []);
 	}
 
 	public onSearch(): void {
@@ -201,11 +199,13 @@ export default class AppController extends BaseController {
 	}
 
 	public onRefreshTable(): void {
-		this.applyFilters();
+		this.refreshTable();
 	}
 
 	private refreshTable(): void {
-		this.applyFilters();
+		const oTable = this.byId("passesTable") as Table;
+		const oBinding = oTable?.getBinding("items") as ODataListBinding;
+		if (oBinding) oBinding.refresh();
 	}
 
 	private getDefaultFormData(isEditMode = false): DialogFormData {
@@ -448,9 +448,9 @@ export default class AppController extends BaseController {
 			oAction.setParameter("entryGate", data.entryGate || null);
 			oAction.setParameter("expectedReturnDate", data.expectedReturnDate || null);
 
-			if (data.showCarrierSection && data.vehicleNumber?.trim() && data.vehicleNumber !== "N/A") {
+			if (data.showCarrierSection && (data.vehicleType || (data.vehicleNumber?.trim() && data.vehicleNumber !== "N/A"))) {
 				oAction.setParameter("vehicle", {
-					vehicleNumber: data.vehicleNumber.trim(),
+					vehicleNumber: data.vehicleNumber?.trim() || "N/A",
 					type: data.vehicleType || null,
 					transporter: data.transporter !== "N/A" ? (data.transporter?.trim() || null) : null
 				});
@@ -474,8 +474,8 @@ export default class AppController extends BaseController {
 			MessageToast.show(this.getResourceText("gatepassCreated"));
 			this.onCloseGatepassDialog();
 			this.refreshTable();
-		} catch {
-			MessageBox.error(this.getResourceText("gatepassCreateFailed"));
+		} catch (err: unknown) {
+			MessageBox.error(err instanceof Error ? err.message : this.getResourceText("gatepassCreateFailed"));
 		}
 	}
 
@@ -490,9 +490,9 @@ export default class AppController extends BaseController {
 			oAction.setParameter("entryGate", data.entryGate || null);
 			oAction.setParameter("expectedReturnDate", data.expectedReturnDate || null);
 
-			if (data.showCarrierSection && data.vehicleNumber?.trim() && data.vehicleNumber !== "N/A") {
+			if (data.showCarrierSection && (data.vehicleType || (data.vehicleNumber?.trim() && data.vehicleNumber !== "N/A"))) {
 				oAction.setParameter("vehicle", {
-					vehicleNumber: data.vehicleNumber.trim(),
+					vehicleNumber: data.vehicleNumber?.trim() || "N/A",
 					type: data.vehicleType || null,
 					transporter: data.transporter !== "N/A" ? (data.transporter?.trim() || null) : null
 				});
@@ -516,8 +516,8 @@ export default class AppController extends BaseController {
 			MessageToast.show(this.getResourceText("gatepassUpdated"));
 			this.onCloseGatepassDialog();
 			this.refreshTable();
-		} catch {
-			MessageBox.error(this.getResourceText("gatepassUpdateFailed"));
+		} catch (err: unknown) {
+			MessageBox.error(err instanceof Error ? err.message : this.getResourceText("gatepassUpdateFailed"));
 		}
 	}
 
@@ -541,8 +541,8 @@ export default class AppController extends BaseController {
 					MessageToast.show(this.getResourceText("sentForApproval"));
 					this.onCloseGatepassDialog();
 					this.refreshTable();
-				} catch {
-					MessageBox.error(this.getResourceText("sendForApprovalFailed"));
+				} catch (err: unknown) {
+					MessageBox.error(err instanceof Error ? err.message : this.getResourceText("sendForApprovalFailed"));
 				}
 			}
 		});
@@ -565,8 +565,8 @@ export default class AppController extends BaseController {
 			MessageToast.show(this.getResourceText("gatepassFinalised"));
 			this.onCloseGatepassDialog();
 			this.refreshTable();
-		} catch {
-			MessageBox.error(this.getResourceText("gatepassFinaliseFailed"));
+		} catch (err: unknown) {
+			MessageBox.error(err instanceof Error ? err.message : this.getResourceText("gatepassFinaliseFailed"));
 		}
 	}
 
@@ -591,8 +591,8 @@ export default class AppController extends BaseController {
 					oAction.destroy();
 					MessageToast.show(`Gatepass ${sPassNumber} sent for approval.`);
 					this.refreshTable();
-				} catch {
-					MessageBox.error(`Failed to send gatepass ${sPassNumber} for approval.`);
+				} catch (err: unknown) {
+					MessageBox.error(err instanceof Error ? err.message : `Failed to send gatepass ${sPassNumber} for approval.`);
 				}
 			}
 		});
@@ -634,8 +634,8 @@ export default class AppController extends BaseController {
 						oAction.destroy();
 						MessageToast.show(`Gatepass ${sPassNumber} cancelled.`);
 						this.refreshTable();
-					} catch {
-						MessageBox.error(`Failed to cancel gatepass ${sPassNumber}.`);
+					} catch (err: unknown) {
+						MessageBox.error(err instanceof Error ? err.message : `Failed to cancel gatepass ${sPassNumber}.`);
 					}
 				}
 			}),

@@ -43,7 +43,7 @@
 				<Panel>
 					<Table
 						id="passesTable"
-						items="{path: '/Passes', sorter: {path: 'createdAt', descending: true}}"
+						items="{path: '/Passes', sorter: {path: 'createdAt', descending: true}, filters: {path: 'status', operator: 'EQ', value1: 'Draft'}}"
 						growing="true"
 						growingThreshold="20"
 						noDataText="{i18n>noData}"
