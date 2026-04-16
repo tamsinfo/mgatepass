@@ -155,7 +155,8 @@ export default class GatepassService extends cds.ApplicationService {
             }
 
             const { Passes } = this.entities
-            await this.updatePassStatus(passId, 'Approved', 'Finalised', pass.status, req.user.id, null)
+            const newStatus = pass.weighbridgeRequired ? 'EntryWeightPending' : 'GateExitPending'
+            await this.updatePassStatus(passId, newStatus, 'Finalised', pass.status, req.user.id, null)
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 
@@ -182,7 +183,8 @@ export default class GatepassService extends cds.ApplicationService {
             }
 
             const { Passes } = this.entities
-            await this.updatePassStatus(passId, 'Approved', 'Approved', pass.status, req.user.id, remarks)
+            const newStatus = pass.weighbridgeRequired ? 'EntryWeightPending' : 'GateExitPending'
+            await this.updatePassStatus(passId, newStatus, 'Approved', pass.status, req.user.id, remarks)
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 

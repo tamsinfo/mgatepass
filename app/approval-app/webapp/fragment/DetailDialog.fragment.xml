@@ -1,0 +1,94 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core"
+	xmlns:form="sap.ui.layout.form"
+>
+	<Dialog
+		id="detailDialog"
+		title="{i18n>detailDialogTitle}"
+		contentWidth="40rem"
+		verticalScrolling="true"
+	>
+		<content>
+			<VBox class="sapUiSmallMargin">
+				<form:SimpleForm
+					editable="false"
+					layout="ResponsiveGridLayout"
+					labelSpanXL="4" labelSpanL="4" labelSpanM="4" labelSpanS="12"
+					emptySpanXL="0" emptySpanL="0" emptySpanM="0"
+					columnsXL="1" columnsL="1" columnsM="1"
+				>
+					<core:Title text="{i18n>sectionPassDetails}"/>
+					<Label text="{i18n>passNumber}"/>
+					<Text text="{detail>/passNumber}"/>
+					<Label text="{i18n>createdAt}"/>
+					<Text text="{detail>/createdAt}"/>
+					<Label text="{i18n>createdBy}"/>
+					<Text text="{detail>/createdBy}"/>
+					<Label text="{i18n>processType}"/>
+					<Text text="{detail>/processType}"/>
+					<Label text="{i18n>gatepassType}"/>
+					<Text text="{detail>/gatepassTypeFormatted}"/>
+					<Label text="{i18n>documentNumber}"/>
+					<Text text="{detail>/documents}"/>
+					<Label text="{i18n>weighbridgeApplicable}"/>
+					<ObjectStatus
+						text="{= ${detail>/weighbridgeRequired} ? 'Yes' : 'No'}"
+						state="{= ${detail>/weighbridgeRequired} ? 'Success' : 'Error'}"
+					/>
+				</form:SimpleForm>
+
+				<form:SimpleForm
+					editable="false"
+					layout="ResponsiveGridLayout"
+					labelSpanXL="4" labelSpanL="4" labelSpanM="4" labelSpanS="12"
+					emptySpanXL="0" emptySpanL="0" emptySpanM="0"
+					columnsXL="1" columnsL="1" columnsM="1"
+					visible="{detail>/isReturnable}"
+				>
+					<core:Title text="{i18n>sectionReturnDetails}"/>
+					<Label text="{i18n>expectedReturnDate}"/>
+					<Text text="{detail>/expectedReturnDate}"/>
+				</form:SimpleForm>
+
+				<Panel class="sapUiSmallMarginTop">
+					<Table
+						id="itemsTable"
+						noDataText="{i18n>noItems}"
+					>
+						<columns>
+							<Column><header><Text text="{i18n>itemColumn}"/></header></Column>
+						</columns>
+					</Table>
+				</Panel>
+
+				<form:SimpleForm
+					editable="false"
+					layout="ResponsiveGridLayout"
+					labelSpanXL="4" labelSpanL="4" labelSpanM="4" labelSpanS="12"
+					emptySpanXL="0" emptySpanL="0" emptySpanM="0"
+					columnsXL="1" columnsL="1" columnsM="1"
+				>
+					<core:Title text="{i18n>sectionCarrierDetails}"/>
+					<Label text="{i18n>carrierType}"/>
+					<Text text="{detail>/carrierType}"/>
+					<Label text="{i18n>transporterName}"/>
+					<Text text="{detail>/transporterName}"/>
+					<Label text="{i18n>driverName}"/>
+					<Text text="{detail>/driverName}"/>
+					<Label text="{i18n>driverContact}"/>
+					<Text text="{detail>/driverContact}"/>
+					<Label text="{i18n>driverLicense}"/>
+					<Text text="{detail>/driverLicense}"/>
+					<Label text="{i18n>vehicleNumber}"/>
+					<Text text="{detail>/vehicleNumber}"/>
+				</form:SimpleForm>
+			</VBox>
+		</content>
+		<buttons>
+			<Button text="{i18n>reject}" type="Reject" press=".onRejectFromDialog"/>
+			<Button text="{i18n>approve}" type="Accept" press=".onApproveFromDialog"/>
+			<Button text="{i18n>close}" press=".onCloseDetailDialog"/>
+		</buttons>
+	</Dialog>
+</core:FragmentDefinition>

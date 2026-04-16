@@ -1,0 +1,58 @@
+<mvc:View
+	controllerName="mgatepass.approval.controller.App"
+	xmlns="sap.m"
+	xmlns:mvc="sap.ui.core.mvc"
+>
+	<App id="app">
+		<Page id="appPage" title="{i18n>appTitle}" showFooter="true">
+			<headerContent>
+				<Button
+					icon="sap-icon://refresh"
+					type="Transparent"
+					press=".onRefreshTable"
+					tooltip="{i18n>refresh}"
+				/>
+			</headerContent>
+			<content>
+				<Panel>
+					<Table
+						id="passesTable"
+						items="{path: '/Passes', sorter: {path: 'createdAt', descending: true}, filters: {path: 'status', operator: 'EQ', value1: 'PendingApproval'}}"
+						growing="true"
+						growingThreshold="20"
+						mode="MultiSelect"
+						noDataText="{i18n>noData}"
+					>
+						<columns>
+							<Column><header><Text text="{i18n>passNumber}"/></header></Column>
+							<Column><header><Text text="{i18n>documentNumber}"/></header></Column>
+							<Column><header><Text text="{i18n>createdAt}"/></header></Column>
+							<Column><header><Text text="{i18n>createdBy}"/></header></Column>
+							<Column hAlign="End" width="4rem"/>
+						</columns>
+						<items>
+							<ColumnListItem>
+								<Text text="{passNumber}"/>
+								<Text text="{path: 'documents', targetType: 'any', formatter: '.formatDocuments'}"/>
+								<Text text="{createdAt}"/>
+								<Text text="{createdBy}"/>
+								<Button
+									icon="sap-icon://slim-arrow-right"
+									type="Transparent"
+									press=".onViewDetails"
+								/>
+							</ColumnListItem>
+						</items>
+					</Table>
+				</Panel>
+			</content>
+			<footer>
+				<Toolbar>
+					<ToolbarSpacer/>
+					<Button text="{i18n>reject}" type="Reject" press=".onRejectSelected"/>
+					<Button text="{i18n>approve}" type="Accept" press=".onApproveSelected"/>
+				</Toolbar>
+			</footer>
+		</Page>
+	</App>
+</mvc:View>
