@@ -14,6 +14,26 @@
 				/>
 			</headerContent>
 			<content>
+				<Panel class="sapUiSmallMarginBottom">
+					<HBox alignItems="End" class="sapUiSmallMargin" wrap="Wrap">
+						<VBox class="sapUiSmallMarginEnd">
+							<Label text="{i18n>filterCreatedDate}" labelFor="dateFilter"/>
+							<DateRangeSelection id="dateFilter" change=".onSearch"/>
+						</VBox>
+						<VBox class="sapUiSmallMarginEnd">
+							<Label text="{i18n>filterCreatedBy}" labelFor="createdByFilter"/>
+							<Input id="createdByFilter" width="12rem" submit=".onSearch"/>
+						</VBox>
+						<VBox class="sapUiSmallMarginEnd">
+							<Label text="{i18n>filterPassNumber}" labelFor="passNumberFilter"/>
+							<Input id="passNumberFilter" width="12rem" submit=".onSearch"/>
+						</VBox>
+						<HBox alignItems="End">
+							<Button text="{i18n>search}" icon="sap-icon://search" press=".onSearch" type="Emphasized" class="sapUiTinyMarginEnd"/>
+							<Button text="{i18n>resetFilters}" icon="sap-icon://clear-filter" press=".onResetFilters" type="Transparent"/>
+						</HBox>
+					</HBox>
+				</Panel>
 				<Panel>
 					<Table
 						id="passesTable"
