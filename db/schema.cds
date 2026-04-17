@@ -101,6 +101,8 @@ entity Passes : cuid, managed {
     documentType       : DocumentType;
     weighbridgeRequired : Boolean default false;
     expectedReturnDate  : Date;
+    approvedAt          : Timestamp;
+    approvedBy          : String(255);
     vehicle             : Association to Vehicles;
     driver             : Association to Drivers;
     entryGate          : Association to Gates;

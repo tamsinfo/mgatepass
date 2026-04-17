@@ -184,7 +184,54 @@ export default class GatepassService extends cds.ApplicationService {
 
             const { Passes } = this.entities
             const newStatus = pass.weighbridgeRequired ? 'EntryWeightPending' : 'GateExitPending'
+            await UPDATE(Passes).set({ approvedAt: new Date().toISOString(), approvedBy: req.user.id }).where({ ID: passId })
             await this.updatePassStatus(passId, newStatus, 'Approved', pass.status, req.user.id, remarks)
+            return SELECT.one.from(Passes).where({ ID: passId })
+        })
+
+        this.on('finaliseEntryWeight', 'Passes', async (req) => {
+            const passId = req.params[0] as string
+            const { entryWeight } = req.data as { entryWeight: number }
+
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
+
+            if (pass.status !== 'EntryWeightPending') {
+                return req.error(409, `Entry weight can only be recorded when status is EntryWeightPending, current: '${pass.status}'`)
+            }
+            if (!entryWeight || entryWeight <= 0) {
+                return req.error(422, 'Entry weight must be a positive number')
+            }
+            if (!pass.weight_ID) {
+                return req.error(422, 'No weight record linked to this pass')
+            }
+
+            const { Passes, Weights } = this.entities
+            await UPDATE(Weights).set({ entryWeight }).where({ ID: pass.weight_ID })
+            await this.updatePassStatus(passId, 'ExitWeightPending', 'WeightRecorded', pass.status, req.user.id, null)
+            return SELECT.one.from(Passes).where({ ID: passId })
+        })
+
+        this.on('finaliseExitWeight', 'Passes', async (req) => {
+            const passId = req.params[0] as string
+            const { exitWeight } = req.data as { exitWeight: number }
+
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
+
+            if (pass.status !== 'ExitWeightPending') {
+                return req.error(409, `Exit weight can only be recorded when status is ExitWeightPending, current: '${pass.status}'`)
+            }
+            if (!exitWeight || exitWeight <= 0) {
+                return req.error(422, 'Exit weight must be a positive number')
+            }
+            if (!pass.weight_ID) {
+                return req.error(422, 'No weight record linked to this pass')
+            }
+
+            const { Passes, Weights } = this.entities
+            await UPDATE(Weights).set({ exitWeight }).where({ ID: pass.weight_ID })
+            await this.updatePassStatus(passId, 'GateExitPending', 'WeightRecorded', pass.status, req.user.id, null)
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 
