@@ -283,6 +283,30 @@ export default class GatepassService extends cds.ApplicationService {
             }
         })
 
+        this.on('performExit', 'Passes', async (req) => {
+            const passId = req.params[0] as string
+            const { exitGate } = req.data as { exitGate: string }
+
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
+
+            if (pass.status !== 'GateExitPending') {
+                return req.error(409, `Exit can only be performed when status is GateExitPending, current: '${pass.status}'`)
+            }
+            if (!exitGate) {
+                return req.error(422, 'Exit gate must be selected')
+            }
+
+            const { Gates } = this.entities
+            const gate = await SELECT.one.from(Gates).where({ ID: exitGate })
+            if (!gate) return req.error(400, 'Invalid exit gate')
+
+            const { Passes } = this.entities
+            await UPDATE(Passes).set({ exitGate_ID: exitGate }).where({ ID: passId })
+            await this.updatePassStatus(passId, 'Completed', 'ExitPerformed', pass.status, req.user.id, null)
+            return SELECT.one.from(Passes).where({ ID: passId })
+        })
+
         this.on('rejectPass', 'Passes', async (req) => {
             const passId = req.params[0] as string
             const { remarks } = req.data as { remarks?: string | null }

@@ -1,0 +1,72 @@
+{
+	"$schema": "https://raw.githubusercontent.com/UI5/manifest/refs/heads/main/schema.json",
+	"_version": "1.85.0",
+	"sap.ui": {
+		"fullWidth": true,
+		"technology": "UI5",
+		"deviceTypes": {
+			"desktop": true,
+			"tablet": true,
+			"phone": false
+		}
+	},
+	"sap.app": {
+		"type": "application",
+		"id": "mgatepass.exit",
+		"i18n": "i18n/i18n.properties",
+		"title": "{{appTitle}}",
+		"description": "{{appDescription}}",
+		"applicationVersion": {
+			"version": "${version}"
+		},
+		"dataSources": {
+			"default": {
+				"type": "OData",
+				"uri": "/odata/v4/gatepass/",
+				"settings": {
+					"odataVersion": "4.0"
+				}
+			}
+		}
+	},
+	"sap.ui5": {
+		"flexEnabled": false,
+		"handleValidation": true,
+		"dependencies": {
+			"minUI5Version": "1.147.1",
+			"libs": {
+				"sap.m": {},
+				"sap.ui.core": {},
+				"sap.ui.layout": {}
+			}
+		},
+		"contentDensities": {
+			"compact": true,
+			"cozy": true
+		},
+		"rootView": {
+			"async": true,
+			"id": "app",
+			"type": "XML",
+			"viewName": "mgatepass.exit.view.App"
+		},
+		"models": {
+			"i18n": {
+				"type": "sap.ui.model.resource.ResourceModel",
+				"settings": {
+					"bundleName": "mgatepass.exit.i18n.i18n",
+					"fallbackLocale": "en",
+					"supportedLocales": ["en"],
+					"async": true
+				}
+			},
+			"": {
+				"dataSource": "default",
+				"type": "sap.ui.model.odata.v4.ODataModel",
+				"settings": {
+					"operationMode": "Server"
+				}
+			}
+		}
+	}
+}

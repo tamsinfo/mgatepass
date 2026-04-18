@@ -1,0 +1,35 @@
+{
+	"include": ["./webapp/**/*"],
+	"compilerOptions": {
+		"ignoreDeprecations": "6.0",
+
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"target": "ESNext",
+		"module": "ESNext",
+
+		"strict": true,
+		"skipLibCheck": true,
+		"noImplicitAny": true,
+		"noImplicitOverride": true,
+		"noUncheckedIndexedAccess": true,
+		"noFallthroughCasesInSwitch": true,
+
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+
+		"moduleResolution": "bundler",
+		"allowImportingTsExtensions": true,
+		"verbatimModuleSyntax": true,
+		"noEmit": true,
+
+		"rootDir": "./webapp",
+		"outDir": "./dist",
+
+		"baseUrl": "./",
+		"paths": {
+			"mgatepass/exit/*": ["./webapp/*"]
+		},
+
+		"typeRoots": ["./node_modules/@types", "./node_modules/@sapui5"]
+	}
+}

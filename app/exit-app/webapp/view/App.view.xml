@@ -1,0 +1,92 @@
+<mvc:View
+	controllerName="mgatepass.exit.controller.App"
+	xmlns="sap.m"
+	xmlns:mvc="sap.ui.core.mvc"
+>
+	<App id="app">
+		<Page id="appPage" title="{i18n>appTitle}" showFooter="true">
+			<headerContent>
+				<Button
+					icon="sap-icon://refresh"
+					type="Transparent"
+					press=".onRefreshTable"
+					tooltip="{i18n>refresh}"
+				/>
+			</headerContent>
+			<content>
+				<Panel class="sapUiSmallMarginBottom">
+					<HBox alignItems="End" class="sapUiSmallMargin" wrap="Wrap">
+						<VBox class="sapUiSmallMarginEnd">
+							<Label text="{i18n>filterCreatedDate}" labelFor="dateFilter"/>
+							<DateRangeSelection id="dateFilter" change=".onSearch"/>
+						</VBox>
+						<VBox class="sapUiSmallMarginEnd">
+							<Label text="{i18n>filterCreatedBy}" labelFor="createdByFilter"/>
+							<Input id="createdByFilter" width="12rem" submit=".onSearch"/>
+						</VBox>
+						<VBox class="sapUiSmallMarginEnd">
+							<Label text="{i18n>filterPassNumber}" labelFor="passNumberFilter"/>
+							<Input id="passNumberFilter" width="12rem" submit=".onSearch"/>
+						</VBox>
+						<HBox alignItems="End">
+							<Button text="{i18n>search}" icon="sap-icon://search" press=".onSearch" type="Emphasized" class="sapUiTinyMarginEnd"/>
+							<Button text="{i18n>resetFilters}" icon="sap-icon://clear-filter" press=".onResetFilters" type="Transparent"/>
+						</HBox>
+					</HBox>
+				</Panel>
+				<Panel>
+					<Table
+						id="passesTable"
+						items="{path: '/Passes', parameters: {$expand: 'weight'}, sorter: {path: 'createdAt', descending: true}}"
+						growing="true"
+						growingThreshold="20"
+						mode="MultiSelect"
+						noDataText="{i18n>noData}"
+					>
+						<columns>
+							<Column><header><Text text="{i18n>passNumber}"/></header></Column>
+							<Column><header><Text text="{i18n>documentNumber}"/></header></Column>
+							<Column><header><Text text="{i18n>approvedAt}"/></header></Column>
+							<Column><header><Text text="{i18n>approvedBy}"/></header></Column>
+							<Column width="7rem"><header><Text text="{parts: ['i18n>entryWeight', 'config>/weightUnit'], formatter: '.formatColumnWithUnit'}"/></header></Column>
+							<Column width="7rem"><header><Text text="{parts: ['i18n>exitWeight', 'config>/weightUnit'], formatter: '.formatColumnWithUnit'}"/></header></Column>
+							<Column width="7rem"><header><Text text="{parts: ['i18n>netWeight', 'config>/weightUnit'], formatter: '.formatColumnWithUnit'}"/></header></Column>
+							<Column width="10rem"><header><Text text="{i18n>exitGate}"/></header></Column>
+							<Column hAlign="End" width="4rem"/>
+						</columns>
+						<items>
+							<ColumnListItem>
+								<Text text="{passNumber}"/>
+								<Text text="{path: 'documents', targetType: 'any', formatter: '.formatDocuments'}"/>
+								<Text text="{approvedAt}"/>
+								<Text text="{approvedBy}"/>
+								<Text text="{path: 'weight/entryWeight', formatter: '.formatWeight'}"/>
+								<Text text="{path: 'weight/exitWeight', formatter: '.formatWeight'}"/>
+								<Text text="{parts: ['weight/entryWeight', 'weight/exitWeight'], formatter: '.formatNetWeight'}"/>
+								<Select
+									id="exitGateSelect"
+									items="{gates>/}"
+									width="100%"
+								>
+									<core:Item xmlns:core="sap.ui.core" key="{gates>ID}" text="{gates>name}"/>
+								</Select>
+								<Button
+									icon="sap-icon://slim-arrow-right"
+									type="Transparent"
+									press=".onViewDetails"
+								/>
+							</ColumnListItem>
+						</items>
+					</Table>
+				</Panel>
+			</content>
+			<footer>
+				<Toolbar>
+					<ToolbarSpacer/>
+					<Button text="{i18n>print}" icon="sap-icon://print" type="Transparent" press=".onPrint"/>
+					<Button text="{i18n>performExit}" type="Success" press=".onPerformExit"/>
+				</Toolbar>
+			</footer>
+		</Page>
+	</App>
+</mvc:View>

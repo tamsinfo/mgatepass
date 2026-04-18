@@ -20,7 +20,8 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
         { grant: 'finaliseGatepass',      to: ['Administrator', 'GateOperator'] },
         { grant: 'finaliseEntryWeight',   to: ['Administrator', 'WeighbridgeOperator'] },
         { grant: 'finaliseExitWeight',    to: ['Administrator', 'WeighbridgeOperator'] },
-        { grant: 'saveWeights',           to: ['Administrator', 'WeighbridgeOperator'] }
+        { grant: 'saveWeights',           to: ['Administrator', 'WeighbridgeOperator'] },
+        { grant: 'performExit',           to: ['Administrator', 'GateOperator'] }
     ])
     entity Passes as projection on mgatepass.Passes
         actions {
@@ -32,6 +33,7 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
             action finaliseEntryWeight(entryWeight : Decimal(10, 3)) returns Passes;
             action finaliseExitWeight(exitWeight : Decimal(10, 3)) returns Passes;
             action saveWeights(entryWeight : Decimal(10, 3), exitWeight : Decimal(10, 3)) returns Passes;
+            action performExit(exitGate : UUID) returns Passes;
             action updateGatepass(
                 weighbridgeRequired : Boolean,
                 entryGate           : UUID,
