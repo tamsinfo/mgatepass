@@ -48,9 +48,9 @@
 							<Column><header><Text text="{i18n>documentNumber}"/></header></Column>
 							<Column><header><Text text="{i18n>approvedAt}"/></header></Column>
 							<Column><header><Text text="{i18n>approvedBy}"/></header></Column>
-							<Column width="7rem"><header><Text text="{i18n>entryWeight}"/></header></Column>
-							<Column width="7rem"><header><Text text="{i18n>exitWeight}"/></header></Column>
-							<Column width="7rem"><header><Text text="{i18n>netWeight}"/></header></Column>
+							<Column width="7rem"><header><Text text="{parts: ['i18n>entryWeight', 'config>/weightUnit'], formatter: '.formatColumnWithUnit'}"/></header></Column>
+							<Column width="7rem"><header><Text text="{parts: ['i18n>exitWeight', 'config>/weightUnit'], formatter: '.formatColumnWithUnit'}"/></header></Column>
+							<Column width="7rem"><header><Text text="{parts: ['i18n>netWeight', 'config>/weightUnit'], formatter: '.formatColumnWithUnit'}"/></header></Column>
 							<Column hAlign="End" width="4rem"/>
 						</columns>
 						<items>
@@ -62,13 +62,13 @@
 								<Input
 									value="{path: 'weight/entryWeight', formatter: '.formatWeight'}"
 									type="Number"
-									enabled="{= ${status} === 'EntryWeightPending'}"
+									enabled="{= %{status} === 'EntryWeightPending'}"
 									width="100%"
 								/>
 								<Input
 									value="{path: 'weight/exitWeight', formatter: '.formatWeight'}"
 									type="Number"
-									enabled="{= ${status} === 'ExitWeightPending'}"
+									enabled="{= %{status} === 'ExitWeightPending' }"
 									width="100%"
 								/>
 								<Text text="{parts: ['weight/entryWeight', 'weight/exitWeight'], formatter: '.formatNetWeight'}"/>
@@ -86,8 +86,9 @@
 				<Toolbar>
 					<ToolbarSpacer/>
 					<Button text="{i18n>print}" icon="sap-icon://print" type="Transparent" press=".onPrint"/>
-					<Button text="{i18n>finaliseEntryWeight}" type="Emphasized" press=".onFinaliseEntryWeight"/>
-					<Button text="{i18n>finaliseExitWeight}" type="Accept" press=".onFinaliseExitWeight"/>
+					<Button text="{i18n>saveWeights}" type="Emphasized" press=".onSaveWeights"/>
+					<Button text="{i18n>finaliseEntryWeight}" type="Success" press=".onFinaliseEntryWeight"/>
+					<Button text="{i18n>finaliseExitWeight}" type="Success" press=".onFinaliseExitWeight"/>
 				</Toolbar>
 			</footer>
 		</Page>

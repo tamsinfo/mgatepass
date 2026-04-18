@@ -235,6 +235,54 @@ export default class GatepassService extends cds.ApplicationService {
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 
+        this.on('saveWeights', 'Passes', async (req) => {
+            const passId = req.params[0] as string
+            const { entryWeight, exitWeight } = req.data as { entryWeight?: number | null; exitWeight?: number | null }
+
+            const pass = await this.getPass(passId)
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
+
+            if (pass.status !== 'EntryWeightPending' && pass.status !== 'ExitWeightPending') {
+                return req.error(409, `Weights can only be saved when status is EntryWeightPending or ExitWeightPending, current: '${pass.status}'`)
+            }
+            if (!pass.weight_ID) {
+                return req.error(422, 'No weight record linked to this pass')
+            }
+
+            const updateData: Record<string, unknown> = {}
+            if (pass.status === 'EntryWeightPending' && entryWeight != null) {
+                updateData.entryWeight = entryWeight
+            }
+            if (pass.status === 'ExitWeightPending' && exitWeight != null) {
+                updateData.exitWeight = exitWeight
+            }
+
+            if (Object.keys(updateData).length > 0) {
+                const { Weights } = this.entities
+                await UPDATE(Weights).set(updateData).where({ ID: pass.weight_ID })
+            }
+
+            const { Passes } = this.entities
+            return SELECT.one.from(Passes).where({ ID: passId })
+        })
+
+        this.before('UPDATE', 'Weights', async (req) => {
+            const weightId = req.data.ID as string
+            if (!weightId) return
+
+            const { Passes } = this.entities
+            const pass = await SELECT.one.from(Passes).where({ weight_ID: weightId }) as Pass | null
+            if (!pass) return
+
+            if (pass.status !== 'EntryWeightPending' && pass.status !== 'ExitWeightPending') {
+                return req.error(403, 'Weights cannot be modified after finalisation')
+            }
+
+            if (pass.status === 'ExitWeightPending' && req.data.entryWeight !== undefined) {
+                return req.error(403, 'Entry weight cannot be modified after finalisation')
+            }
+        })
+
         this.on('rejectPass', 'Passes', async (req) => {
             const passId = req.params[0] as string
             const { remarks } = req.data as { remarks?: string | null }

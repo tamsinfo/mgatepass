@@ -8,7 +8,6 @@ type GatepassType : String enum { Returnable; NonReturnable; AgainstOutwardRGP; 
 type PassStatus : String enum {
     Draft;
     PendingApproval;
-    Approved;
     Rejected;
     Cancelled;
     EntryWeightPending;

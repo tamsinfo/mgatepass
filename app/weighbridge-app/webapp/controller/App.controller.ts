@@ -57,7 +57,20 @@ export default class AppController extends BaseController {
 
 	public override onInit(): void {
 		this.initResourceBundle();
+		this.getView()!.setModel(new JSONModel({ weightUnit: "" }), "config");
+		this.loadAppConfig();
 		this.applyFilters();
+	}
+
+	private async loadAppConfig(): Promise<void> {
+		const oModel = this.getOwnerComponent()!.getModel() as ODataModel;
+		const oBinding = oModel.bindList("/AppConfig");
+		const aContexts = await oBinding.requestContexts(0, 1);
+		if (aContexts.length > 0) {
+			const weightUnit = (aContexts[0]!.getProperty("weightUnit") as string) || "kg";
+			(this.getView()!.getModel("config") as JSONModel).setProperty("/weightUnit", weightUnit);
+		}
+		oBinding.destroy();
 	}
 
 	public applyFilters(): void {
@@ -116,6 +129,10 @@ export default class AppController extends BaseController {
 				.join(", ");
 		}
 		return String(aDocuments);
+	}
+
+	public formatColumnWithUnit(label: string, unit: string): string {
+		return `${label} (${unit || "kg"})`;
 	}
 
 	public formatWeight(weight: unknown): string {
@@ -236,6 +253,59 @@ export default class AppController extends BaseController {
 		oDialog.close();
 	}
 
+	private extractErrorMessage(err: unknown): string {
+		if (err && typeof err === "object") {
+			const e = err as Record<string, unknown>;
+			if (e.error && typeof e.error === "object") {
+				const inner = e.error as Record<string, unknown>;
+				if (typeof inner.message === "string") return inner.message;
+			}
+			if (typeof e.message === "string") return e.message;
+		}
+		if (err instanceof Error) return err.message;
+		return String(err);
+	}
+
+	public async onSaveWeights(): Promise<void> {
+		const oTable = this.byId("passesTable") as Table;
+		const aSelectedItems = oTable.getSelectedItems();
+		if (!aSelectedItems.length) {
+			MessageBox.error(this.getResourceText("noSelection"));
+			return;
+		}
+
+		const oModel = this.getView()!.getModel() as ODataModel;
+		let successCount = 0;
+		const errors: string[] = [];
+
+		for (const item of aSelectedItems) {
+			const oContext = item.getBindingContext()!;
+			const status = oContext.getProperty("status") as string;
+			if (status !== "EntryWeightPending" && status !== "ExitWeightPending") continue;
+
+			const entryInput = (item as ColumnListItem).getCells()[4] as Input;
+			const exitInput = (item as ColumnListItem).getCells()[5] as Input;
+			const entryVal = parseFloat(entryInput.getValue());
+			const exitVal = parseFloat(exitInput.getValue());
+
+			try {
+				const oAction = oModel.bindContext(`${oContext.getPath()}/GatepassService.saveWeights(...)`);
+				if (!isNaN(entryVal)) oAction.setParameter("entryWeight", entryVal);
+				if (!isNaN(exitVal)) oAction.setParameter("exitWeight", exitVal);
+				await oAction.execute();
+				oAction.destroy();
+				successCount++;
+			} catch (err: unknown) {
+				errors.push(this.extractErrorMessage(err));
+			}
+		}
+
+		if (successCount > 0) MessageToast.show(this.getResourceText("saveWeightsSuccess"));
+		if (errors.length) MessageBox.error(errors.join("\n"));
+		this.onRefreshTable();
+		oTable.removeSelections(true);
+	}
+
 	public async onFinaliseEntryWeight(): Promise<void> {
 		const oTable = this.byId("passesTable") as Table;
 		const aSelectedItems = oTable.getSelectedItems();
@@ -246,19 +316,16 @@ export default class AppController extends BaseController {
 
 		const oModel = this.getView()!.getModel() as ODataModel;
 		let successCount = 0;
-		let failCount = 0;
+		const errors: string[] = [];
 
 		for (const item of aSelectedItems) {
 			const oContext = item.getBindingContext()!;
-			if (oContext.getProperty("status") !== "EntryWeightPending") {
-				failCount++;
-				continue;
-			}
+			if (oContext.getProperty("status") !== "EntryWeightPending") continue;
 
 			const weightInput = (item as ColumnListItem).getCells()[4] as Input;
 			const weight = parseFloat(weightInput.getValue());
 			if (isNaN(weight) || weight <= 0) {
-				failCount++;
+				errors.push(this.getResourceText("invalidWeight"));
 				continue;
 			}
 
@@ -268,13 +335,13 @@ export default class AppController extends BaseController {
 				await oAction.execute();
 				oAction.destroy();
 				successCount++;
-			} catch {
-				failCount++;
+			} catch (err: unknown) {
+				errors.push(this.extractErrorMessage(err));
 			}
 		}
 
 		if (successCount > 0) MessageToast.show(this.getResourceText("entryWeightSuccess"));
-		if (failCount > 0) MessageBox.error(this.getResourceText("weightFailed"));
+		if (errors.length) MessageBox.error(errors.join("\n"));
 		this.onRefreshTable();
 		oTable.removeSelections(true);
 	}
@@ -289,19 +356,16 @@ export default class AppController extends BaseController {
 
 		const oModel = this.getView()!.getModel() as ODataModel;
 		let successCount = 0;
-		let failCount = 0;
+		const errors: string[] = [];
 
 		for (const item of aSelectedItems) {
 			const oContext = item.getBindingContext()!;
-			if (oContext.getProperty("status") !== "ExitWeightPending") {
-				failCount++;
-				continue;
-			}
+			if (oContext.getProperty("status") !== "ExitWeightPending") continue;
 
 			const weightInput = (item as ColumnListItem).getCells()[5] as Input;
 			const weight = parseFloat(weightInput.getValue());
 			if (isNaN(weight) || weight <= 0) {
-				failCount++;
+				errors.push(this.getResourceText("invalidWeight"));
 				continue;
 			}
 
@@ -311,15 +375,36 @@ export default class AppController extends BaseController {
 				await oAction.execute();
 				oAction.destroy();
 				successCount++;
-			} catch {
-				failCount++;
+			} catch (err: unknown) {
+				errors.push(this.extractErrorMessage(err));
 			}
 		}
 
 		if (successCount > 0) MessageToast.show(this.getResourceText("exitWeightSuccess"));
-		if (failCount > 0) MessageBox.error(this.getResourceText("weightFailed"));
+		if (errors.length) MessageBox.error(errors.join("\n"));
 		this.onRefreshTable();
 		oTable.removeSelections(true);
+	}
+
+	public async onSaveWeightsFromDialog(): Promise<void> {
+		const oDialog = await this.getDetailDialog();
+		const oDetailModel = oDialog.getModel("detail") as JSONModel;
+		const sPath = oDetailModel.getProperty("/passPath") as string;
+		const entryVal = parseFloat(oDetailModel.getProperty("/entryWeight") as string);
+		const exitVal = parseFloat(oDetailModel.getProperty("/exitWeight") as string);
+
+		try {
+			const oModel = this.getView()!.getModel() as ODataModel;
+			const oAction = oModel.bindContext(`${sPath}/GatepassService.saveWeights(...)`);
+			if (!isNaN(entryVal)) oAction.setParameter("entryWeight", entryVal);
+			if (!isNaN(exitVal)) oAction.setParameter("exitWeight", exitVal);
+			await oAction.execute();
+			oAction.destroy();
+			MessageToast.show(this.getResourceText("saveWeightsSuccess"));
+			this.onRefreshTable();
+		} catch (err: unknown) {
+			MessageBox.error(this.extractErrorMessage(err));
+		}
 	}
 
 	public async onFinaliseEntryWeightFromDialog(): Promise<void> {
@@ -343,7 +428,7 @@ export default class AppController extends BaseController {
 			this.onCloseDetailDialog();
 			this.onRefreshTable();
 		} catch (err: unknown) {
-			MessageBox.error(err instanceof Error ? err.message : this.getResourceText("weightFailed"));
+			MessageBox.error(this.extractErrorMessage(err));
 		}
 	}
 
@@ -368,7 +453,7 @@ export default class AppController extends BaseController {
 			this.onCloseDetailDialog();
 			this.onRefreshTable();
 		} catch (err: unknown) {
-			MessageBox.error(err instanceof Error ? err.message : this.getResourceText("weightFailed"));
+			MessageBox.error(this.extractErrorMessage(err));
 		}
 	}
 

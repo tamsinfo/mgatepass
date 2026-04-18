@@ -96,14 +96,14 @@
 						id="dialogEntryWeight"
 						value="{detail>/entryWeight}"
 						type="Number"
-						enabled="{= ${detail>/status} === 'EntryWeightPending'}"
+						enabled="{= %{detail>/status} === 'EntryWeightPending'}"
 					/>
 					<Label text="{i18n>exitWeight}"/>
 					<Input
 						id="dialogExitWeight"
 						value="{detail>/exitWeight}"
 						type="Number"
-						enabled="{= ${detail>/status} === 'ExitWeightPending'}"
+						enabled="{= %{detail>/status} === 'ExitWeightPending'}"
 					/>
 					<Label text="{i18n>netWeight}"/>
 					<Text text="{detail>/netWeight}"/>
@@ -111,8 +111,9 @@
 			</VBox>
 		</content>
 		<buttons>
-			<Button text="{i18n>finaliseEntryWeight}" type="Emphasized" press=".onFinaliseEntryWeightFromDialog" visible="{= ${detail>/status} === 'EntryWeightPending'}"/>
-			<Button text="{i18n>finaliseExitWeight}" type="Accept" press=".onFinaliseExitWeightFromDialog" visible="{= ${detail>/status} === 'ExitWeightPending'}"/>
+			<Button text="{i18n>saveWeights}" type="Emphasized" press=".onSaveWeightsFromDialog" visible="{= %{detail>/status} === 'EntryWeightPending' || %{detail>/status} === 'ExitWeightPending'}"/>
+			<Button text="{i18n>finaliseEntryWeight}" type="Success" press=".onFinaliseEntryWeightFromDialog" visible="{= %{detail>/status} === 'EntryWeightPending'}"/>
+			<Button text="{i18n>finaliseExitWeight}" type="Success" press=".onFinaliseExitWeightFromDialog" visible="{= %{detail>/status} === 'ExitWeightPending'}"/>
 			<Button text="{i18n>close}" press=".onCloseDetailDialog"/>
 		</buttons>
 	</Dialog>
