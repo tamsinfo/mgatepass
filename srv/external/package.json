@@ -1,0 +1,10 @@
+{
+  "cds": {
+    "requires": {
+      "API_MATERIAL_DOCUMENT_SRV": {
+        "kind": "odata-v2",
+        "model": "srv/external/API_MATERIAL_DOCUMENT_SRV"
+      }
+    }
+  }
+}
