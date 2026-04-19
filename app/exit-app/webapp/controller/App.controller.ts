@@ -368,7 +368,7 @@ export default class AppController extends BaseController {
 			try {
 				const oAction = oModel.bindContext(`${oContext.getPath()}/GatepassService.printPass(...)`);
 				await oAction.execute();
-				const html = oAction.getBoundContext().getObject() as unknown as string;
+				const html = (oAction.getBoundContext().getObject() as Record<string, unknown>).value as string;
 				oAction.destroy();
 				const printWindow = window.open("", "_blank");
 				if (printWindow) {
