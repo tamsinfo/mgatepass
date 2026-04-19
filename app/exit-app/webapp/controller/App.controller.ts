@@ -353,7 +353,31 @@ export default class AppController extends BaseController {
 		}
 	}
 
-	public onPrint(): void {
-		MessageToast.show("Print functionality coming soon.");
+	public async onPrint(): Promise<void> {
+		const oTable = this.byId("passesTable") as Table;
+		const aSelectedItems = oTable.getSelectedItems();
+		if (!aSelectedItems.length) {
+			MessageBox.error(this.getResourceText("noSelection"));
+			return;
+		}
+
+		const oModel = this.getView()!.getModel() as ODataModel;
+
+		for (const item of aSelectedItems) {
+			const oContext = item.getBindingContext()!;
+			try {
+				const oAction = oModel.bindContext(`${oContext.getPath()}/GatepassService.printPass(...)`);
+				await oAction.execute();
+				const html = oAction.getBoundContext().getObject() as unknown as string;
+				oAction.destroy();
+				const printWindow = window.open("", "_blank");
+				if (printWindow) {
+					printWindow.document.write(html);
+					printWindow.document.close();
+				}
+			} catch (err: unknown) {
+				MessageBox.error(this.extractErrorMessage(err));
+			}
+		}
 	}
 }

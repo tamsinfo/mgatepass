@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Gatepass {{passNumber}}</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    color: #1a1a1a;
+    background: #f0f0f0;
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+    margin: 0;
+  }
+  .slip {
+    background: #fff;
+    width: 740px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px 24px;
+    background: #003b5c;
+    color: #fff;
+  }
+  .header-left { flex: 1; }
+  .header-logo {
+    max-height: 48px;
+    max-width: 200px;
+    margin-bottom: 8px;
+  }
+  .org-name {
+    font-size: 10px;
+    font-weight: normal;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.75;
+    margin-bottom: 4px;
+  }
+  .slip-label {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 14px;
+  }
+  .gatepass-id {
+    font-size: 34px;
+    font-weight: bold;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    color: #fff;
+    background: {{statusColor}};
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .header-meta {
+    margin-top: 8px;
+    font-size: 11px;
+    opacity: 0.8;
+  }
+  .qr-wrap {
+    background: #fff;
+    padding: 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .qr-wrap img { display: block; width: 120px; height: 120px; }
+
+  .section {
+    padding: 16px 24px;
+    border-bottom: 1px solid #ebebeb;
+  }
+  .section:last-of-type { border-bottom: none; }
+  .section-title {
+    font-size: 10px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #003b5c;
+    margin-bottom: 14px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid #003b5c;
+    display: inline-block;
+  }
+  .fields {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px 32px;
+  }
+  .fields-3col {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px 32px;
+  }
+  .field-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+    margin-bottom: 2px;
+  }
+  .field-value { font-size: 14px; font-weight: 500; }
+
+  .weight-section {
+    background: #f8fbff;
+    border-left: 4px solid #003b5c;
+  }
+  .weight-value {
+    font-size: 22px;
+    font-weight: bold;
+    color: #003b5c;
+  }
+  .weight-unit {
+    font-size: 12px;
+    color: #888;
+    margin-left: 4px;
+  }
+  .net-weight {
+    background: #003b5c;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-top: 8px;
+  }
+  .net-weight-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.8;
+  }
+  .net-weight-value {
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  .timeline {
+    position: relative;
+    padding-left: 20px;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #ddd;
+  }
+  .timeline-item {
+    position: relative;
+    padding-bottom: 12px;
+    padding-left: 16px;
+  }
+  .timeline-item:last-child { padding-bottom: 0; }
+  .timeline-dot {
+    position: absolute;
+    left: -17px;
+    top: 3px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #003b5c;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 1px #003b5c;
+  }
+  .timeline-action {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+  .timeline-time {
+    font-size: 11px;
+    color: #888;
+    margin-top: 1px;
+  }
+  .timeline-details {
+    font-size: 11px;
+    color: #555;
+    margin-top: 2px;
+  }
+  .no-data {
+    font-size: 12px;
+    color: #aaa;
+    font-style: italic;
+  }
+
+  .signatures {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    margin-top: 24px;
+  }
+  .sig-block {
+    text-align: center;
+    padding-top: 40px;
+    border-top: 1px solid #999;
+    font-size: 11px;
+    color: #666;
+  }
+
+  .footer {
+    background: #f7f7f7;
+    padding: 10px 24px;
+    font-size: 10px;
+    color: #aaa;
+    text-align: right;
+    border-top: 1px solid #ebebeb;
+  }
+
+  @media print {
+    body { background: #fff; padding: 0; }
+    .slip { box-shadow: none; border: none; width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="slip">
+  <div class="header">
+    <div class="header-left">
+      {{#if companyLogo}}
+      <img class="header-logo" src="{{companyLogo}}" alt="Company Logo"/>
+      {{/if}}
+      <div class="org-name">Material Gatepass Management</div>
+      <div class="slip-label">Gatepass Slip</div>
+      <div class="gatepass-id">{{passNumber}}</div>
+      <div class="status-badge">{{statusLabel}}</div>
+      <div class="header-meta">Created: {{createdAt}}</div>
+    </div>
+    <div class="qr-wrap"><img src="{{qrUrl}}" alt="QR Code"/></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Basic Details</div>
+    <div class="fields">
+      <div><div class="field-label">Process Type</div><div class="field-value">{{val processType}}</div></div>
+      <div><div class="field-label">Gatepass Type</div><div class="field-value">{{val gatepassTypeLabel}}</div></div>
+      <div><div class="field-label">Document Type</div><div class="field-value">{{val documentType}}</div></div>
+      <div><div class="field-label">Weighbridge Required</div><div class="field-value">{{yesNo weighbridgeRequired}}</div></div>
+      <div><div class="field-label">Document Numbers</div><div class="field-value">{{val documents}}</div></div>
+      {{#if expectedReturnDate}}
+      <div><div class="field-label">Expected Return Date</div><div class="field-value">{{expectedReturnDate}}</div></div>
+      {{/if}}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Gate Details</div>
+    <div class="fields">
+      <div><div class="field-label">Entry Gate</div><div class="field-value">{{val entryGate}}</div></div>
+      <div><div class="field-label">Exit Gate</div><div class="field-value">{{val exitGate}}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Carrier Details</div>
+    <div class="fields-3col">
+      <div><div class="field-label">Vehicle Type</div><div class="field-value">{{val vehicleType}}</div></div>
+      <div><div class="field-label">Vehicle Number</div><div class="field-value">{{val vehicleNumber}}</div></div>
+      <div><div class="field-label">Transporter</div><div class="field-value">{{val transporter}}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Driver Details</div>
+    <div class="fields-3col">
+      <div><div class="field-label">Name</div><div class="field-value">{{val driverName}}</div></div>
+      <div><div class="field-label">License Number</div><div class="field-value">{{val driverLicense}}</div></div>
+      <div><div class="field-label">Contact Number</div><div class="field-value">{{val driverContact}}</div></div>
+    </div>
+  </div>
+
+  {{#if showWeighbridge}}
+  <div class="section weight-section">
+    <div class="section-title">Weighbridge</div>
+    <div class="fields-3col">
+      <div>
+        <div class="field-label">Entry Weight</div>
+        <div class="weight-value">{{val entryWeightFormatted}}<span class="weight-unit">{{#if hasEntryWeight}}{{weightUnit}}{{/if}}</span></div>
+      </div>
+      <div>
+        <div class="field-label">Exit Weight</div>
+        <div class="weight-value">{{val exitWeightFormatted}}<span class="weight-unit">{{#if hasExitWeight}}{{weightUnit}}{{/if}}</span></div>
+      </div>
+      <div>
+        <div class="field-label">Net Weight</div>
+        <div class="weight-value">{{val netWeightFormatted}}<span class="weight-unit">{{#if hasNetWeight}}{{weightUnit}}{{/if}}</span></div>
+      </div>
+    </div>
+  </div>
+  {{/if}}
+
+  <div class="section">
+    <div class="section-title">Approval</div>
+    <div class="fields">
+      <div><div class="field-label">Approved By</div><div class="field-value">{{val approvedBy}}</div></div>
+      <div><div class="field-label">Approved At</div><div class="field-value">{{val approvedAt}}</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Audit Trail</div>
+    {{#if auditLogs.length}}
+    <div class="timeline">
+      {{#each auditLogs}}
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-content">
+          <div class="timeline-action">{{action}} — {{performedBy}}</div>
+          <div class="timeline-time">{{performedAt}}</div>
+          {{#if remarks}}<div class="timeline-details">{{remarks}}</div>{{/if}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+    {{else}}
+    <div class="no-data">No audit records</div>
+    {{/if}}
+  </div>
+
+  <div class="section">
+    <div class="signatures">
+      <div class="sig-block">Security Guard</div>
+      <div class="sig-block">Weighbridge Operator</div>
+      <div class="sig-block">Authorized Signatory</div>
+    </div>
+  </div>
+
+  <div class="footer">Printed on {{printedAt}}</div>
+</div>
+<script>window.onload = function() { window.print(); }</script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 import cds from '@sap/cds'
 import type { Pass, Vehicle, Driver, PassAuditLog, createGatepass } from '#cds-models/GatepassService'
 import type { DocumentType, PassStatus, AuditAction } from '#cds-models/mgatepass'
+import { buildPrintSlipHtml } from './print-slip'
 
 type CreateGatepassParams = (typeof createGatepass)['__parameters']
 
@@ -307,6 +308,37 @@ export default class GatepassService extends cds.ApplicationService {
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 
+        this.on('printPass', 'Passes', async (req) => {
+            const passId = req.params[0] as string
+
+            const { Passes, Vehicles, VehicleTypes, Drivers, Weights, Gates, PassAuditLogs } = this.entities
+            const pass = await SELECT.one.from(Passes).where({ ID: passId }) as Pass | null
+            if (!pass) return req.error(404, `Pass ${passId} not found`)
+
+            const vehicle = pass.vehicle_ID ? await SELECT.one.from(Vehicles).where({ ID: pass.vehicle_ID }) as Record<string, unknown> | null : null
+            const vehicleType = vehicle?.type_ID ? await SELECT.one.from(VehicleTypes).where({ ID: vehicle.type_ID as string }) as Record<string, unknown> | null : null
+            const driver = pass.driver_ID ? await SELECT.one.from(Drivers).where({ ID: pass.driver_ID }) as Record<string, unknown> | null : null
+            const weight = pass.weight_ID ? await SELECT.one.from(Weights).where({ ID: pass.weight_ID }) as Record<string, unknown> | null : null
+            const entryGate = pass.entryGate_ID ? await SELECT.one.from(Gates).where({ ID: pass.entryGate_ID }) as Record<string, unknown> | null : null
+            const exitGate = pass.exitGate_ID ? await SELECT.one.from(Gates).where({ ID: pass.exitGate_ID }) as Record<string, unknown> | null : null
+
+            const auditLogs = await SELECT.from(PassAuditLogs)
+                .where({ pass_ID: passId })
+                .orderBy('performedAt asc') as PassAuditLog[]
+
+            const { AppConfig } = this.entities
+            const config = await SELECT.one.from(AppConfig) as Record<string, unknown> | null
+            const companyLogo = (config?.companyLogo as string) || null
+            const weightUnit = (config?.weightUnit as string) || 'kg'
+
+            await this.updateAuditLog(passId, 'Printed', pass.status!, req.user.id, null)
+
+            return buildPrintSlipHtml({
+                pass, vehicle, vehicleType, driver, weight,
+                entryGate, exitGate, auditLogs, companyLogo, weightUnit
+            })
+        })
+
         this.on('rejectPass', 'Passes', async (req) => {
             const passId = req.params[0] as string
             const { remarks } = req.data as { remarks?: string | null }
@@ -444,6 +476,25 @@ export default class GatepassService extends cds.ApplicationService {
             performedBy: userId,
             oldValue: JSON.stringify({ status: oldStatus }),
             newValue: JSON.stringify({ status: newStatus }),
+            remarks: remarks || null
+        } as Partial<PassAuditLog>)
+    }
+
+    private async updateAuditLog(
+        passId: string,
+        auditAction: AuditAction,
+        currentStatus: PassStatus,
+        userId: string,
+        remarks: string | null | undefined
+    ): Promise<void> {
+        const { PassAuditLogs } = this.entities
+        await INSERT.into(PassAuditLogs).entries({
+            pass_ID: passId,
+            action: auditAction,
+            performedAt: new Date().toISOString(),
+            performedBy: userId,
+            oldValue: JSON.stringify({ status: currentStatus }),
+            newValue: null,
             remarks: remarks || null
         } as Partial<PassAuditLog>)
     }
