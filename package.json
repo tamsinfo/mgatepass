@@ -6,6 +6,8 @@
   "license": "SEE LICENSE IN LICENSE",
   "private": true,
   "dependencies": {
+    "@sap-cloud-sdk/http-client": "^4.7.0",
+    "@sap-cloud-sdk/resilience": "^4.7.0",
     "@sap/cds": "^8",
     "express": "^4",
     "handlebars": "^4.7.9"

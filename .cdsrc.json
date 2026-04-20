@@ -1,30 +1,42 @@
 {
-  "requires": {
-    "auth": {
-      "[development]": {
-        "kind": "mocked",
-        "users": {
-          "admin": {
-            "password": "admin",
-            "roles": ["Administrator"]
-          },
-          "weighbridge": {
-            "password": "weighbridge",
-            "roles": ["WeighbridgeOperator"]
-          },
-          "gateop": {
-            "password": "gateop",
-            "roles": ["GateOperator"]
-          },
-          "approver": {
-            "password": "approver",
-            "roles": ["Approver"]
-          }
-        }
-      },
-      "[production]": {
-        "kind": "xsuaa"
-      }
-    }
-  }
+	"requires": {
+		"CE_PURCHASEORDER_0001": {
+			"kind": "odata",
+			"model": "srv/external/CE_PURCHASEORDER_0001"
+		},
+		"API_BILLING_DOCUMENT_SRV": {
+			"kind": "odata-v2",
+			"model": "srv/external/API_BILLING_DOCUMENT_SRV"
+		},
+		"API_MATERIAL_DOCUMENT_SRV": {
+			"kind": "odata-v2",
+			"model": "srv/external/API_MATERIAL_DOCUMENT_SRV"
+		},
+		"auth": {
+			"[development]": {
+				"kind": "mocked",
+				"users": {
+					"admin": {
+						"password": "admin",
+						"roles": ["Administrator"]
+					},
+					"weighbridge": {
+						"password": "weighbridge",
+						"roles": ["WeighbridgeOperator"]
+					},
+					"gateop": {
+						"password": "gateop",
+						"roles": ["GateOperator"]
+					},
+					"approver": {
+						"password": "approver",
+						"roles": ["Approver"]
+					}
+				}
+			},
+			"[production]": {
+				"kind": "xsuaa"
+			}
+		}
+	}
 }
