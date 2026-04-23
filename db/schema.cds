@@ -108,8 +108,24 @@ entity Passes : cuid, managed {
     exitGate           : Association to Gates;
     weight             : Association to Weights;
     documents          : many String(50);
+    items              : Composition of many GatepassItems
+                           on items.pass = $self;
     auditLog           : Composition of many PassAuditLogs
                            on auditLog.pass = $self;
+}
+
+entity GatepassItems : cuid {
+    pass                : Association to Passes;
+    lineItem            : String(6);
+    documentNumber      : String(20);
+    materialCode        : String(40);
+    materialDescription : String(100);
+    partyName           : String(200);
+    orderQuantity       : Decimal(13, 3);
+    openQuantity        : Decimal(13, 3);
+    receivedQuantity    : Decimal(13, 3);
+    issueQuantity       : Decimal(13, 3);
+    purchaseOrder       : String(10);
 }
 
 entity PassAuditLogs : cuid {

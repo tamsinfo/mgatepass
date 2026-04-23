@@ -9,6 +9,7 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
     @readonly entity Vehicles as projection on mgatepass.Vehicles;
     @readonly entity Drivers as projection on mgatepass.Drivers;
     @readonly entity PassAuditLogs as projection on mgatepass.PassAuditLogs;
+    @readonly entity GatepassItems as projection on mgatepass.GatepassItems;
 
     @(restrict: [
         { grant: 'READ',              to: ['Administrator', 'WeighbridgeOperator', 'GateOperator', 'Approver'] },
@@ -41,7 +42,8 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
                 entryGate           : UUID,
                 expectedReturnDate  : Date,
                 vehicle             : VehicleInput,
-                driver              : DriverInput
+                driver              : DriverInput,
+                items               : many GatepassItemInput
             ) returns Passes;
         };
 
@@ -63,6 +65,26 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
         contactNumber : String(20);
     }
 
+    type GatepassItemInput {
+        lineItem            : String(6);
+        documentNumber      : String(20);
+        materialCode        : String(40);
+        materialDescription : String(100);
+        partyName           : String(200);
+        orderQuantity       : Decimal(13, 3);
+        openQuantity        : Decimal(13, 3);
+        receivedQuantity    : Decimal(13, 3);
+        issueQuantity       : Decimal(13, 3);
+        purchaseOrder       : String(10);
+    }
+
+    @(requires: ['Administrator', 'GateOperator'])
+    action fetchDocumentItems(
+        processType  : mgatepass.ProcessType,
+        gatepassType : mgatepass.GatepassType,
+        documents    : many String(50)
+    ) returns many GatepassItemInput;
+
     @(requires: ['Administrator', 'GateOperator'])
     action createGatepass(
         processType         : mgatepass.ProcessType,
@@ -72,6 +94,7 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
         entryGate           : UUID,
         expectedReturnDate  : Date,
         vehicle             : VehicleInput,
-        driver              : DriverInput
+        driver              : DriverInput,
+        items               : many GatepassItemInput
     ) returns Passes;
 }
