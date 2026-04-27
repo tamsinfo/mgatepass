@@ -1,9 +1,21 @@
 import cds from '@sap/cds'
-import type { Pass, Vehicle, Driver, PassAuditLog, createGatepass } from '#cds-models/GatepassService'
+import type { Pass, Vehicle, Driver, PassAuditLog, GatepassItem, createGatepass, fetchDocumentItems } from '#cds-models/GatepassService'
 import type { DocumentType, PassStatus, AuditAction } from '#cds-models/mgatepass'
 import { buildPrintSlipHtml } from './print-slip'
 
 type CreateGatepassParams = (typeof createGatepass)['__parameters']
+type FetchDocItemsParams = (typeof fetchDocumentItems)['__parameters']
+
+interface NormalizedItem {
+    lineItem: string
+    documentNumber: string
+    materialCode: string
+    materialDescription: string
+    partyName: string
+    orderQuantity: number | null
+    openQuantity: number | null
+    purchaseOrder: string | null
+}
 
 const DOCUMENT_TYPE_MAP: Record<string, DocumentType> = {
     'Inward_NonReturnable': 'PurchaseOrder',
@@ -25,7 +37,7 @@ export default class GatepassService extends cds.ApplicationService {
             const {
                 processType, gatepassType, documents,
                 weighbridgeRequired, entryGate, expectedReturnDate,
-                vehicle, driver
+                vehicle, driver, items
             } = req.data as CreateGatepassParams
 
             if (!processType || !gatepassType) {
@@ -92,9 +104,26 @@ export default class GatepassService extends cds.ApplicationService {
                 documents: sanitizedDocs
             }
 
-            const { Passes, PassAuditLogs } = this.entities
+            const { Passes, PassAuditLogs, GatepassItems } = this.entities
             await INSERT.into(Passes).entries(passData)
             const passId = passData.ID!
+
+            if (items?.length) {
+                const itemEntries = items.map((item) => ({
+                    pass_ID: passId,
+                    lineItem: item.lineItem,
+                    documentNumber: item.documentNumber,
+                    materialCode: item.materialCode,
+                    materialDescription: item.materialDescription,
+                    partyName: item.partyName,
+                    orderQuantity: item.orderQuantity ?? null,
+                    openQuantity: item.openQuantity ?? null,
+                    receivedQuantity: item.receivedQuantity ?? null,
+                    issueQuantity: item.issueQuantity ?? null,
+                    purchaseOrder: item.purchaseOrder ?? null
+                }))
+                await INSERT.into(GatepassItems).entries(itemEntries)
+            }
 
             await INSERT.into(PassAuditLogs).entries({
                 pass_ID: passId,
@@ -371,10 +400,41 @@ export default class GatepassService extends cds.ApplicationService {
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 
+        this.on('fetchDocumentItems', async (req) => {
+            const { processType, gatepassType, documents } = req.data as FetchDocItemsParams
+
+            if (!processType || !gatepassType) {
+                return req.error(400, 'processType and gatepassType are required')
+            }
+            if (!documents?.length) {
+                return req.error(400, 'At least one document number is required')
+            }
+
+            const docNumbers = documents.map((d: string) => d?.trim()).filter(Boolean)
+            const combo = `${processType}_${gatepassType}`
+
+            switch (combo) {
+                case 'Inward_NonReturnable':
+                    return this.fetchPurchaseOrderItems(docNumbers)
+                case 'Outward_NonReturnable':
+                    return this.fetchBillingDocItems(docNumbers, 'F2')
+                case 'Inward_Returnable':
+                    return this.fetchMaterialDocItems(docNumbers)
+                case 'Outward_Returnable':
+                    return this.fetchBillingDocItems(docNumbers, 'JSN')
+                case 'Inward_AgainstOutwardRGP':
+                    return this.fetchGatepassItems(docNumbers, 'receivedQuantity')
+                case 'Outward_AgainstInwardRGP':
+                    return this.fetchGatepassItems(docNumbers, 'issueQuantity')
+                default:
+                    return req.error(400, `Unsupported combination: ${processType} + ${gatepassType}`)
+            }
+        })
+
         this.on('updateGatepass', 'Passes', async (req) => {
             const passId = req.params[0] as string
-            const { weighbridgeRequired, entryGate, expectedReturnDate, vehicle, driver } =
-                req.data as { weighbridgeRequired?: boolean; entryGate?: string | null; expectedReturnDate?: string | null; vehicle?: { vehicleNumber?: string; type?: string; transporter?: string } | null; driver?: { name?: string; licenseNumber?: string; contactNumber?: string } | null }
+            const { weighbridgeRequired, entryGate, expectedReturnDate, vehicle, driver, items } =
+                req.data as { weighbridgeRequired?: boolean; entryGate?: string | null; expectedReturnDate?: string | null; vehicle?: { vehicleNumber?: string; type?: string; transporter?: string } | null; driver?: { name?: string; licenseNumber?: string; contactNumber?: string } | null; items?: Record<string, unknown>[] }
 
             const pass = await this.getPass(passId)
             if (!pass) return req.error(404, `Pass ${passId} not found`)
@@ -445,6 +505,27 @@ export default class GatepassService extends cds.ApplicationService {
                     newValue: JSON.stringify(updateData),
                     remarks: null
                 } as Partial<PassAuditLog>)
+            }
+
+            if (items) {
+                const { GatepassItems } = this.entities
+                await DELETE.from(GatepassItems).where({ pass_ID: passId })
+                if (items.length) {
+                    const itemEntries = items.map((item) => ({
+                        pass_ID: passId,
+                        lineItem: item.lineItem,
+                        documentNumber: item.documentNumber,
+                        materialCode: item.materialCode,
+                        materialDescription: item.materialDescription,
+                        partyName: item.partyName,
+                        orderQuantity: item.orderQuantity ?? null,
+                        openQuantity: item.openQuantity ?? null,
+                        receivedQuantity: item.receivedQuantity ?? null,
+                        issueQuantity: item.issueQuantity ?? null,
+                        purchaseOrder: item.purchaseOrder ?? null
+                    }))
+                    await INSERT.into(GatepassItems).entries(itemEntries)
+                }
             }
 
             const { Passes } = this.entities
@@ -554,5 +635,141 @@ export default class GatepassService extends cds.ApplicationService {
 
         await INSERT.into(Drivers).entries(data)
         return (data as Record<string, unknown>).ID as string
+    }
+
+    private async fetchPurchaseOrderItems(docNumbers: string[]): Promise<NormalizedItem[]> {
+        const poSrv = await cds.connect.to('CE_PURCHASEORDER_0001')
+        const { PurchaseOrder, PurchaseOrderItem, PurchaseOrderScheduleLine } = poSrv.entities
+
+        const [orders, poItems, schedLines] = await Promise.all([
+            poSrv.run(
+                SELECT.from(PurchaseOrder)
+                    .columns('PurchaseOrder', 'Supplier')
+                    .where({ PurchaseOrder: { in: docNumbers } })
+            ) as Promise<Record<string, unknown>[]>,
+            poSrv.run(
+                SELECT.from(PurchaseOrderItem)
+                    .columns('PurchaseOrder', 'PurchaseOrderItem', 'Material', 'PurchaseOrderItemText', 'OrderQuantity')
+                    .where({ PurchaseOrder: { in: docNumbers } })
+            ) as Promise<Record<string, unknown>[]>,
+            poSrv.run(
+                SELECT.from(PurchaseOrderScheduleLine)
+                    .columns('PurchaseOrder', 'PurchaseOrderItem', 'OpenPurchaseOrderQuantity')
+                    .where({ PurchaseOrder: { in: docNumbers } })
+            ) as Promise<Record<string, unknown>[]>
+        ])
+
+        const supplierMap = new Map<string, string>()
+        for (const o of orders) {
+            supplierMap.set(o.PurchaseOrder as string, String(o.Supplier || ''))
+        }
+
+        const openQtyMap = new Map<string, number>()
+        for (const sl of schedLines) {
+            const key = `${sl.PurchaseOrder}_${sl.PurchaseOrderItem}`
+            openQtyMap.set(key, (openQtyMap.get(key) || 0) + Number(sl.OpenPurchaseOrderQuantity || 0))
+        }
+
+        return poItems.map(item => ({
+            lineItem: String(item.PurchaseOrderItem),
+            documentNumber: String(item.PurchaseOrder),
+            materialCode: String(item.Material || ''),
+            materialDescription: String(item.PurchaseOrderItemText || ''),
+            partyName: supplierMap.get(item.PurchaseOrder as string) || '',
+            orderQuantity: Number(item.OrderQuantity) || null,
+            openQuantity: openQtyMap.get(`${item.PurchaseOrder}_${item.PurchaseOrderItem}`) ?? null,
+            purchaseOrder: null
+        }))
+    }
+
+    private async fetchBillingDocItems(docNumbers: string[], billingDocType: string): Promise<NormalizedItem[]> {
+        const bdSrv = await cds.connect.to('API_BILLING_DOCUMENT_SRV')
+        const { A_BillingDocument, A_BillingDocumentItem } = bdSrv.entities
+
+        const [headers, bdItems] = await Promise.all([
+            bdSrv.run(
+                SELECT.from(A_BillingDocument)
+                    .columns('BillingDocument', 'SoldToParty')
+                    .where({ BillingDocument: { in: docNumbers }, BillingDocumentType: billingDocType })
+            ) as Promise<Record<string, unknown>[]>,
+            bdSrv.run(
+                SELECT.from(A_BillingDocumentItem)
+                    .columns('BillingDocument', 'BillingDocumentItem', 'Material', 'BillingDocumentItemText', 'BillingQuantity')
+                    .where({ BillingDocument: { in: docNumbers } })
+            ) as Promise<Record<string, unknown>[]>
+        ])
+
+        const validDocs = new Set(headers.map(h => h.BillingDocument as string))
+        const partyMap = new Map<string, string>()
+        for (const h of headers) {
+            partyMap.set(h.BillingDocument as string, String(h.SoldToParty || ''))
+        }
+
+        return bdItems
+            .filter(item => validDocs.has(item.BillingDocument as string))
+            .map(item => ({
+                lineItem: String(item.BillingDocumentItem),
+                documentNumber: String(item.BillingDocument),
+                materialCode: String(item.Material || ''),
+                materialDescription: String(item.BillingDocumentItemText || ''),
+                partyName: partyMap.get(item.BillingDocument as string) || '',
+                orderQuantity: Number(item.BillingQuantity) || null,
+                openQuantity: null,
+                purchaseOrder: null
+            }))
+    }
+
+    private async fetchMaterialDocItems(docNumbers: string[]): Promise<NormalizedItem[]> {
+        const matSrv = await cds.connect.to('API_MATERIAL_DOCUMENT_SRV')
+
+        const matItems = await matSrv.run(
+            SELECT.from('API_MATERIAL_DOCUMENT_SRV.A_MaterialDocumentItem')
+                .columns(
+                    'MaterialDocument', 'MaterialDocumentItem', 'Material',
+                    'MaterialDocumentItemText', 'Supplier', 'PurchaseOrder',
+                    'GoodsMovementType', 'InventorySpecialStockType', 'QuantityInBaseUnit'
+                )
+                .where({
+                    MaterialDocument: { in: docNumbers },
+                    GoodsMovementType: '501',
+                    InventorySpecialStockType: 'M'
+                })
+        ) as Record<string, unknown>[]
+
+        return matItems.map(item => ({
+            lineItem: String(item.MaterialDocumentItem),
+            documentNumber: String(item.MaterialDocument),
+            materialCode: String(item.Material || ''),
+            materialDescription: String(item.MaterialDocumentItemText || ''),
+            partyName: String(item.Supplier || ''),
+            orderQuantity: Number(item.QuantityInBaseUnit) || null,
+            openQuantity: null,
+            purchaseOrder: String(item.PurchaseOrder || '') || null
+        }))
+    }
+
+    private async fetchGatepassItems(passNumbers: string[], _inputField: string): Promise<NormalizedItem[]> {
+        const { Passes, GatepassItems } = this.entities
+
+        const passes = await SELECT.from(Passes)
+            .columns('ID')
+            .where({ passNumber: { in: passNumbers } }) as { ID: string }[]
+
+        if (!passes.length) return []
+        const passIds = passes.map(p => p.ID)
+
+        const items = await SELECT.from(GatepassItems)
+            .where({ pass_ID: { in: passIds } }) as GatepassItem[]
+
+        return items.map(item => ({
+            lineItem: item.lineItem || '',
+            documentNumber: item.documentNumber || '',
+            materialCode: item.materialCode || '',
+            materialDescription: item.materialDescription || '',
+            partyName: item.partyName || '',
+            orderQuantity: item.orderQuantity ? Number(item.orderQuantity) : null,
+            openQuantity: item.openQuantity ? Number(item.openQuantity) : null,
+            purchaseOrder: item.purchaseOrder || null
+        }))
     }
 }
