@@ -11,6 +11,10 @@ import TextArea from "sap/m/TextArea";
 import MButton from "sap/m/Button";
 import VBox from "sap/m/VBox";
 import Token from "sap/m/Token";
+import Column from "sap/m/Column";
+import ColumnListItem from "sap/m/ColumnListItem";
+import Text from "sap/m/Text";
+import Input from "sap/m/Input";
 import type Dialog from "sap/m/Dialog";
 import type Button from "sap/m/Button";
 import type MultiInput from "sap/m/MultiInput";
@@ -19,7 +23,6 @@ import type ODataListBinding from "sap/ui/model/odata/v4/ODataListBinding";
 import type ODataContextBinding from "sap/ui/model/odata/v4/ODataContextBinding";
 import type Table from "sap/m/Table";
 import type DateRangeSelection from "sap/m/DateRangeSelection";
-import type Input from "sap/m/Input";
 import type Event from "sap/ui/base/Event";
 
 interface VehicleTypeConfig {
@@ -64,6 +67,7 @@ interface DialogFormData {
 	vehicleTypes: VehicleTypeConfig[];
 	gates: Array<{ ID: string; name: string }>;
 	carrierFields: CarrierFieldState;
+	items: ItemData[];
 }
 
 const ALL_CARRIER_ENABLED: CarrierFieldState = {
@@ -72,6 +76,85 @@ const ALL_CARRIER_ENABLED: CarrierFieldState = {
 	driverName: true,
 	driverLicense: true,
 	driverContact: true
+};
+
+interface ColumnDef {
+	labelKey: string;
+	property: string;
+	isInput?: boolean;
+}
+
+interface ItemData {
+	lineItem: string;
+	documentNumber: string;
+	materialCode: string;
+	materialDescription: string;
+	partyName: string;
+	orderQuantity: number | null;
+	openQuantity: number | null;
+	receivedQuantity: number | null;
+	issueQuantity: number | null;
+	purchaseOrder: string | null;
+}
+
+const COLUMN_CONFIGS: Record<string, ColumnDef[]> = {
+	Inward_NonReturnable: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colOrderQty", property: "orderQuantity" },
+		{ labelKey: "colOpenQty", property: "openQuantity" },
+		{ labelKey: "colReceivedQty", property: "receivedQuantity", isInput: true }
+	],
+	Outward_NonReturnable: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colBillingQty", property: "orderQuantity" },
+		{ labelKey: "colIssueQty", property: "issueQuantity", isInput: true }
+	],
+	Inward_Returnable: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colPurchaseOrder", property: "purchaseOrder" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colReceivedQty", property: "receivedQuantity", isInput: true }
+	],
+	Outward_Returnable: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colIssueQty", property: "issueQuantity", isInput: true }
+	],
+	Inward_AgainstOutwardRGP: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colReceivedQty", property: "receivedQuantity", isInput: true }
+	],
+	Outward_AgainstInwardRGP: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colPurchaseOrder", property: "purchaseOrder" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colIssueQty", property: "issueQuantity", isInput: true }
+	]
 };
 
 /**
@@ -232,7 +315,8 @@ export default class AppController extends BaseController {
 			approvalRequired: false,
 			vehicleTypes: this._vehicleTypes,
 			gates: this._gates,
-			carrierFields: { ...ALL_CARRIER_ENABLED }
+			carrierFields: { ...ALL_CARRIER_ENABLED },
+			items: []
 		};
 	}
 
@@ -309,9 +393,30 @@ export default class AppController extends BaseController {
 			this.applyCarrierFieldRules(formData, formData.vehicleType);
 		}
 
+		const itemsBinding = oModel.bindList(`${formData.editPassPath}/items`);
+		const itemContexts = await itemsBinding.requestContexts();
+		formData.items = itemContexts.map(ctx => ({
+			lineItem: ctx.getProperty("lineItem") as string ?? "",
+			documentNumber: ctx.getProperty("documentNumber") as string ?? "",
+			materialCode: ctx.getProperty("materialCode") as string ?? "",
+			materialDescription: ctx.getProperty("materialDescription") as string ?? "",
+			partyName: ctx.getProperty("partyName") as string ?? "",
+			orderQuantity: ctx.getProperty("orderQuantity") as number | null,
+			openQuantity: ctx.getProperty("openQuantity") as number | null,
+			receivedQuantity: ctx.getProperty("receivedQuantity") as number | null,
+			issueQuantity: ctx.getProperty("issueQuantity") as number | null,
+			purchaseOrder: ctx.getProperty("purchaseOrder") as string | null
+		}));
+		itemsBinding.destroy();
+
 		const oDialog = await this.getDialog();
 		oDialog.setModel(new JSONModel(formData), "dialog");
 		oDialog.open();
+
+		const combo = `${formData.processType}_${formData.gatepassType}`;
+		if (formData.items.length && COLUMN_CONFIGS[combo]) {
+			this.buildItemsTable(combo);
+		}
 
 		const oDocInput = this.byId("documentNumberInput") as MultiInput;
 		oDocInput.removeAllTokens();
@@ -357,8 +462,80 @@ export default class AppController extends BaseController {
 		oInput.setValue("");
 	}
 
-	public onDocumentGo(): void {
-		// will be wired to document lookup
+	public async onDocumentGo(): Promise<void> {
+		const oDialog = await this.getDialog();
+		const oDialogModel = oDialog.getModel("dialog") as JSONModel;
+		const processType = oDialogModel.getProperty("/processType") as string;
+		const gatepassType = oDialogModel.getProperty("/gatepassType") as string;
+
+		if (!processType || !gatepassType) {
+			MessageBox.error(this.getResourceText("validationSelectTypes"));
+			return;
+		}
+
+		const oDocInput = this.byId("documentNumberInput") as MultiInput;
+		const pendingValue = oDocInput.getValue()?.trim();
+		if (pendingValue) {
+			oDocInput.addToken(new Token({ key: pendingValue, text: pendingValue }));
+			oDocInput.setValue("");
+		}
+		const documents = oDocInput.getTokens().map(t => t.getKey());
+		if (!documents.length) {
+			MessageBox.error(this.getResourceText("validationEnterDocuments"));
+			return;
+		}
+
+		try {
+			const oModel = this.getView()!.getModel() as ODataModel;
+			const oAction = oModel.bindContext("/fetchDocumentItems(...)") as ODataContextBinding;
+			oAction.setParameter("processType", processType);
+			oAction.setParameter("gatepassType", gatepassType);
+			oAction.setParameter("documents", documents);
+			await oAction.execute();
+
+			const result = (oAction.getBoundContext()!.getObject() as Record<string, unknown>).value as ItemData[] | undefined;
+			const items: ItemData[] = (result || []).map(item => ({
+				...item,
+				receivedQuantity: item.receivedQuantity ?? null,
+				issueQuantity: item.issueQuantity ?? null
+			}));
+			oAction.destroy();
+
+			oDialogModel.setProperty("/items", items);
+			this.buildItemsTable(`${processType}_${gatepassType}`);
+		} catch (err: unknown) {
+			MessageBox.error(err instanceof Error ? err.message : this.getResourceText("fetchItemsFailed"));
+		}
+	}
+
+	private buildItemsTable(combo: string): void {
+		const columns = COLUMN_CONFIGS[combo];
+		if (!columns) return;
+
+		const oTable = this.byId("documentItemsTable") as Table;
+		oTable.destroyColumns();
+		oTable.unbindItems();
+
+		for (const col of columns) {
+			oTable.addColumn(new Column({
+				header: new Text({ text: this.getResourceText(col.labelKey) })
+			}));
+		}
+
+		oTable.bindItems({
+			path: "dialog>/items",
+			template: new ColumnListItem({
+				cells: columns.map(col => {
+					if (col.isInput) {
+						return new Input({
+							value: `{dialog>${col.property}}`,
+							type: "Number"
+						});
+					}
+					return new Text({ text: `{dialog>${col.property}}` });
+				})
+			})
+		});
 	}
 
 	public onVehicleTypeChange(): void {
@@ -468,6 +645,8 @@ export default class AppController extends BaseController {
 				oAction.setParameter("driver", null);
 			}
 
+			oAction.setParameter("items", data.items.length ? data.items : null);
+
 			await oAction.execute();
 			oAction.destroy();
 
@@ -509,6 +688,8 @@ export default class AppController extends BaseController {
 			} else {
 				oAction.setParameter("driver", null);
 			}
+
+			oAction.setParameter("items", data.items.length ? data.items : null);
 
 			await oAction.execute();
 			oAction.destroy();

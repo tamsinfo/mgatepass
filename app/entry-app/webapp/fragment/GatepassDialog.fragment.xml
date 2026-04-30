@@ -6,7 +6,7 @@
 	<Dialog
 		id="gatepassDialog"
 		title="{dialog>/title}"
-		contentWidth="40rem"
+		contentWidth="70rem"
 		verticalScrolling="true"
 	>
 		<content>
