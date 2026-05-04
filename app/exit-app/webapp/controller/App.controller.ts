@@ -5,6 +5,9 @@ import JSONModel from "sap/ui/model/json/JSONModel";
 import Fragment from "sap/ui/core/Fragment";
 import Filter from "sap/ui/model/Filter";
 import FilterOperator from "sap/ui/model/FilterOperator";
+import Column from "sap/m/Column";
+import ColumnListItem from "sap/m/ColumnListItem";
+import Text from "sap/m/Text";
 import type Dialog from "sap/m/Dialog";
 import type Button from "sap/m/Button";
 import type Input from "sap/m/Input";
@@ -12,7 +15,6 @@ import type Select from "sap/m/Select";
 import type ODataModel from "sap/ui/model/odata/v4/ODataModel";
 import type ODataListBinding from "sap/ui/model/odata/v4/ODataListBinding";
 import type Table from "sap/m/Table";
-import type ColumnListItem from "sap/m/ColumnListItem";
 import type DateRangeSelection from "sap/m/DateRangeSelection";
 import type Event from "sap/ui/base/Event";
 
@@ -28,11 +30,90 @@ interface GateItem {
 	name: string;
 }
 
+interface ColumnDef {
+	labelKey: string;
+	property: string;
+}
+
+interface ItemData {
+	lineItem: string;
+	documentNumber: string;
+	materialCode: string;
+	materialDescription: string;
+	partyName: string;
+	orderQuantity: number | null;
+	openQuantity: number | null;
+	receivedQuantity: number | null;
+	issueQuantity: number | null;
+	purchaseOrder: string | null;
+}
+
+const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
+	Inward_NonReturnable: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colOrderQty", property: "orderQuantity" },
+		{ labelKey: "colOpenQty", property: "openQuantity" },
+		{ labelKey: "colReceivedQty", property: "receivedQuantity" }
+	],
+	Outward_NonReturnable: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colBillingQty", property: "orderQuantity" },
+		{ labelKey: "colIssueQty", property: "issueQuantity" }
+	],
+	Inward_Returnable: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colPurchaseOrder", property: "purchaseOrder" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colReceivedQty", property: "receivedQuantity" }
+	],
+	Outward_Returnable: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colIssueQty", property: "issueQuantity" }
+	],
+	Inward_AgainstOutwardRGP: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colReceivedQty", property: "receivedQuantity" }
+	],
+	Outward_AgainstInwardRGP: [
+		{ labelKey: "colDocNumber", property: "documentNumber" },
+		{ labelKey: "colLineItem", property: "lineItem" },
+		{ labelKey: "colPurchaseOrder", property: "purchaseOrder" },
+		{ labelKey: "colMaterialCode", property: "materialCode" },
+		{ labelKey: "colMaterialDesc", property: "materialDescription" },
+		{ labelKey: "colPartyName", property: "partyName" },
+		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colIssueQty", property: "issueQuantity" }
+	]
+};
+
 interface DetailData {
 	passNumber: string;
 	createdAt: string;
 	createdBy: string;
 	processType: string;
+	gatepassType: string;
 	gatepassTypeFormatted: string;
 	documents: string;
 	approvedAt: string;
@@ -51,6 +132,7 @@ interface DetailData {
 	hasWeights: boolean;
 	exitGateId: string;
 	passPath: string;
+	items: ItemData[];
 }
 
 /**
@@ -212,11 +294,13 @@ export default class AppController extends BaseController {
 			const exitWeight = oContext.getProperty("weight/exitWeight") as number | null;
 			const hasWeights = oContext.getProperty("weight_ID") != null;
 
+			const processType = oContext.getProperty("processType") as string;
 			const detail: DetailData = {
 				passNumber: oContext.getProperty("passNumber") as string,
 				createdAt: oContext.getProperty("createdAt") as string,
 				createdBy: oContext.getProperty("createdBy") as string,
-				processType: oContext.getProperty("processType") as string,
+				processType,
+				gatepassType,
 				gatepassTypeFormatted: GATEPASS_TYPE_LABELS[gatepassType] ?? gatepassType,
 				documents: this.formatDocuments(rawDocs),
 				approvedAt: (oContext.getProperty("approvedAt") as string) ?? "",
@@ -234,7 +318,8 @@ export default class AppController extends BaseController {
 				netWeight: this.formatNetWeight(entryWeight, exitWeight),
 				hasWeights,
 				exitGateId: "",
-				passPath: oContext.getPath()
+				passPath: oContext.getPath(),
+				items: []
 			};
 
 			const vehicleId = oContext.getProperty("vehicle_ID") as string | null;
@@ -276,12 +361,57 @@ export default class AppController extends BaseController {
 				} catch { /* driver data unavailable */ }
 			}
 
+			const itemsBinding = oModel.bindList(`${oContext.getPath()}/items`);
+			const itemContexts = await itemsBinding.requestContexts();
+			detail.items = itemContexts.map(ctx => ({
+				lineItem: ctx.getProperty("lineItem") as string ?? "",
+				documentNumber: ctx.getProperty("documentNumber") as string ?? "",
+				materialCode: ctx.getProperty("materialCode") as string ?? "",
+				materialDescription: ctx.getProperty("materialDescription") as string ?? "",
+				partyName: ctx.getProperty("partyName") as string ?? "",
+				orderQuantity: ctx.getProperty("orderQuantity") as number | null,
+				openQuantity: ctx.getProperty("openQuantity") as number | null,
+				receivedQuantity: ctx.getProperty("receivedQuantity") as number | null,
+				issueQuantity: ctx.getProperty("issueQuantity") as number | null,
+				purchaseOrder: ctx.getProperty("purchaseOrder") as string | null
+			}));
+			itemsBinding.destroy();
+
 			const oDialog = await this.getDetailDialog();
 			oDialog.setModel(new JSONModel(detail), "detail");
 			oDialog.open();
+
+			const combo = `${processType}_${gatepassType}`;
+			if (detail.items.length && ITEM_COLUMNS[combo]) {
+				this.buildItemsTable(combo);
+			}
 		} catch (err: unknown) {
 			MessageBox.error(this.extractErrorMessage(err));
 		}
+	}
+
+	private buildItemsTable(combo: string): void {
+		const columns = ITEM_COLUMNS[combo];
+		if (!columns) return;
+
+		const oTable = this.byId("itemsTable") as Table;
+		oTable.destroyColumns();
+		oTable.unbindItems();
+
+		for (const col of columns) {
+			oTable.addColumn(new Column({
+				header: new Text({ text: this.getResourceText(col.labelKey) })
+			}));
+		}
+
+		oTable.bindItems({
+			path: "detail>/items",
+			template: new ColumnListItem({
+				cells: columns.map(col =>
+					new Text({ text: `{detail>${col.property}}` })
+				)
+			})
+		});
 	}
 
 	public async onCloseDetailDialog(): Promise<void> {
