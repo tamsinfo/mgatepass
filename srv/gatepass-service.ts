@@ -260,6 +260,16 @@ export default class GatepassService extends cds.ApplicationService {
             }
 
             const { Passes, Weights } = this.entities
+            const weight = await SELECT.one.from(Weights).where({ ID: pass.weight_ID }) as { entryWeight: number | null } | undefined
+            const entryWeight = weight?.entryWeight ?? 0
+
+            if (pass.processType === 'Outward' && exitWeight <= entryWeight) {
+                return req.error(422, 'For outward gatepasses, exit weight must be greater than entry weight')
+            }
+            if (pass.processType === 'Inward' && exitWeight >= entryWeight) {
+                return req.error(422, 'For inward gatepasses, exit weight must be less than entry weight')
+            }
+
             await UPDATE(Weights).set({ exitWeight }).where({ ID: pass.weight_ID })
             await this.updatePassStatus(passId, 'GateExitPending', 'WeightRecorded', pass.status, req.user.id, null)
             return SELECT.one.from(Passes).where({ ID: passId })
@@ -391,8 +401,9 @@ export default class GatepassService extends cds.ApplicationService {
             const pass = await this.getPass(passId)
             if (!pass) return req.error(404, `Pass ${passId} not found`)
 
-            if (pass.status === 'Cancelled') {
-                return req.error(409, 'Pass is already cancelled')
+            const uncancellable = ['Cancelled', 'Completed', 'PartiallyReturned', 'Returned']
+            if (uncancellable.includes(pass.status!)) {
+                return req.error(409, `Pass cannot be cancelled in status: ${pass.status}`)
             }
 
             const { Passes } = this.entities
