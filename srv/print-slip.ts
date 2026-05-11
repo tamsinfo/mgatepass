@@ -97,7 +97,18 @@ export function buildPrintSlipHtml(data: PrintData): string {
     const qrData = encodeURIComponent(JSON.stringify({
         passNumber: pass.passNumber,
         status: pass.status,
-        processType: pass.processType
+        processType: pass.processType,
+        gatepassType: pass.gatepassType,
+        documents: pass.documents,
+        vehicleType: vehicleType?.name ?? null,
+        vehicleNumber: vehicle?.vehicleNumber ?? null,
+        transporter: vehicle?.transporter ?? null,
+        driverName: driver?.name ?? null,
+        driverLicense: driver?.licenseNumber ?? null,
+        driverContact: driver?.contactNumber ?? null,
+        entryWeight: entryWeight,
+        exitWeight: exitWeight,
+        netWeight: netWeight
     }))
 
     const docs = pass.documents as unknown
