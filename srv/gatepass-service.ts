@@ -68,7 +68,7 @@ export default class GatepassService extends cds.ApplicationService {
                 vehicleId = await this.findOrCreateVehicle({
                     vehicleNumber: vehicle.vehicleNumber.trim().toUpperCase(),
                     type_ID: vehicle.type || null,
-                    transporter: vehicle.transporter?.trim() || null
+                    transporter: vehicle.transporter?.trim() || 'N/A'
                 })
             }
 
@@ -76,8 +76,8 @@ export default class GatepassService extends cds.ApplicationService {
             if (driver?.name?.trim()) {
                 driverId = await this.findOrCreateDriver({
                     name: driver.name.trim(),
-                    licenseNumber: driver.licenseNumber?.trim() || null,
-                    contactNumber: driver.contactNumber?.trim() || null
+                    licenseNumber: driver.licenseNumber?.trim() || 'N/A',
+                    contactNumber: driver.contactNumber?.trim() || 'N/A'
                 })
             }
 
@@ -120,7 +120,7 @@ export default class GatepassService extends cds.ApplicationService {
                     openQuantity: item.openQuantity ?? null,
                     receivedQuantity: item.receivedQuantity ?? null,
                     issueQuantity: item.issueQuantity ?? null,
-                    purchaseOrder: item.purchaseOrder ?? null
+                    purchaseOrder: item.purchaseOrder || 'N/A'
                 }))
                 await INSERT.into(GatepassItems).entries(itemEntries)
             }
@@ -185,6 +185,7 @@ export default class GatepassService extends cds.ApplicationService {
             }
 
             const { Passes } = this.entities
+            await UPDATE(Passes).set({ approvedBy: 'N/A' }).where({ ID: passId })
             const newStatus = pass.weighbridgeRequired ? 'EntryWeightPending' : 'GateExitPending'
             await this.updatePassStatus(passId, newStatus, 'Finalised', pass.status, req.user.id, null)
             return SELECT.one.from(Passes).where({ ID: passId })
