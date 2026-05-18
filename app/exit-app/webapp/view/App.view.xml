@@ -2,6 +2,8 @@
 	controllerName="mgatepass.exit.controller.App"
 	xmlns="sap.m"
 	xmlns:mvc="sap.ui.core.mvc"
+	xmlns:core="sap.ui.core"
+	core:require="{ formatter: 'mgatepass/exit/model/formatter' }"
 >
 	<App id="app">
 		<Page id="appPage" title="{i18n>appTitle}" showFooter="true">
@@ -57,8 +59,8 @@
 						<items>
 							<ColumnListItem>
 								<Text text="{passNumber}"/>
-								<Text text="{path: 'documents', targetType: 'any', formatter: '.formatDocuments'}"/>
-								<Text text="{approvedAt}"/>
+								<Text text="{ path: 'documents', targetType: 'any', formatter: 'formatter.formatDocuments' }"/>
+								<Text text="{ path: 'approvedAt', formatter: 'formatter.formatDateTime' }"/>
 								<Text text="{approvedBy}"/>
 								<Text text="{path: 'weight/entryWeight', formatter: '.formatWeight'}"/>
 								<Text text="{path: 'weight/exitWeight', formatter: '.formatWeight'}"/>

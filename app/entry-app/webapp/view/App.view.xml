@@ -2,6 +2,8 @@
 	controllerName="mgatepass.entry.controller.App"
 	xmlns="sap.m"
 	xmlns:mvc="sap.ui.core.mvc"
+	xmlns:core="sap.ui.core"
+	core:require="{ formatter: 'mgatepass/entry/model/formatter' }"
 >
 	<App id="app">
 		<Page id="appPage" title="{i18n>appTitle}">
@@ -58,8 +60,8 @@
 						<items>
 							<ColumnListItem>
 								<Text text="{passNumber}"/>
-								<Text text="{path: 'documents', targetType: 'any', formatter: '.formatDocuments'}"/>
-								<Text text="{createdAt}"/>
+								<Text text="{ path: 'documents', targetType: 'any', formatter: 'formatter.formatDocuments' }"/>
+								<Text text="{ path: 'createdAt', formatter: 'formatter.formatDateTime' }"/>
 								<Text text="{createdBy}"/>
 								<HBox justifyContent="End">
 									<Button text="{i18n>edit}" icon="sap-icon://edit" type="Transparent" press=".onEditPass"/>

@@ -3,6 +3,8 @@
 	xmlns="sap.m"
 	xmlns:mvc="sap.ui.core.mvc"
 	xmlns:u="sap.ui.unified"
+	xmlns:core="sap.ui.core"
+	core:require="{ formatter: 'mgatepass/config/model/formatter' }"
 >
 	<App id="app">
 		<Page
@@ -21,7 +23,7 @@
 						<items>
 							<ColumnListItem>
 								<Text text="{processType}"/>
-								<Text text="{path: 'gatepassType', formatter: '.formatGatepassType'}"/>
+								<Text text="{ path: 'gatepassType', formatter: 'formatter.formatGatepassType' }"/>
 								<CheckBox selected="{approvalRequired}"/>
 							</ColumnListItem>
 						</items>

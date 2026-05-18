@@ -17,13 +17,7 @@ import type ODataListBinding from "sap/ui/model/odata/v4/ODataListBinding";
 import type Table from "sap/m/Table";
 import type DateRangeSelection from "sap/m/DateRangeSelection";
 import type Event from "sap/ui/base/Event";
-
-const GATEPASS_TYPE_LABELS: Record<string, string> = {
-	Returnable: "Returnable",
-	NonReturnable: "Non-Returnable",
-	AgainstOutwardRGP: "Against Outward RGP",
-	AgainstInwardRGP: "Against Inward RGP"
-};
+import formatter from "mgatepass/exit/model/formatter";
 
 interface GateItem {
 	ID: string;
@@ -114,7 +108,6 @@ interface DetailData {
 	createdBy: string;
 	processType: string;
 	gatepassType: string;
-	gatepassTypeFormatted: string;
 	documents: string;
 	approvedAt: string;
 	approvedBy: string;
@@ -219,18 +212,6 @@ export default class AppController extends BaseController {
 		this.applyFilters();
 	}
 
-	public formatDocuments(aDocuments: unknown): string {
-		if (!aDocuments) return "";
-		if (typeof aDocuments === "string") return aDocuments;
-		if (Array.isArray(aDocuments)) {
-			return aDocuments
-				.map((d: unknown) => (typeof d === "object" && d !== null) ? (d as Record<string, unknown>).value : d)
-				.filter(Boolean)
-				.join(", ");
-		}
-		return String(aDocuments);
-	}
-
 	public formatColumnWithUnit(label: string, unit: string): string {
 		return `${label} (${unit || "kg"})`;
 	}
@@ -301,12 +282,11 @@ export default class AppController extends BaseController {
 				createdBy: oContext.getProperty("createdBy") as string,
 				processType,
 				gatepassType,
-				gatepassTypeFormatted: GATEPASS_TYPE_LABELS[gatepassType] ?? gatepassType,
-				documents: this.formatDocuments(rawDocs),
-				approvedAt: (oContext.getProperty("approvedAt") as string) ?? "",
+				documents: formatter.formatDocuments(rawDocs),
+				approvedAt: oContext.getProperty("approvedAt") as string,
 				approvedBy: (oContext.getProperty("approvedBy") as string) ?? "",
 				isReturnable: gatepassType === "Returnable",
-				expectedReturnDate: (oContext.getProperty("expectedReturnDate") as string) ?? "",
+				expectedReturnDate: oContext.getProperty("expectedReturnDate") as string,
 				carrierType: "",
 				transporterName: "",
 				driverName: "",

@@ -228,18 +228,6 @@ export default class AppController extends BaseController {
 		return oModel.getProperty(`/rules/${sProcessType}_${sGatepassType}`) === true;
 	}
 
-	public formatDocuments(aDocuments: unknown): string {
-		if (!aDocuments) return "";
-		if (typeof aDocuments === "string") return aDocuments;
-		if (Array.isArray(aDocuments)) {
-			return aDocuments
-				.map((d: unknown) => (typeof d === "object" && d !== null) ? (d as Record<string, unknown>).value : d)
-				.filter(Boolean)
-				.join(", ");
-		}
-		return String(aDocuments);
-	}
-
 	public applyFilters(): void {
 		const oTable = this.byId("passesTable") as Table;
 		const oBinding = oTable?.getBinding("items") as ODataListBinding;

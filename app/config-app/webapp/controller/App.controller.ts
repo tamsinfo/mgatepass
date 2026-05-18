@@ -8,13 +8,6 @@ import type Button from "sap/m/Button";
 import type FileUploader from "sap/ui/unified/FileUploader";
 import type Event from "sap/ui/base/Event";
 
-const GATEPASS_TYPE_LABELS: Record<string, string> = {
-	Returnable: "Returnable",
-	NonReturnable: "Non-Returnable",
-	AgainstOutwardRGP: "Against Outward RGP",
-	AgainstInwardRGP: "Against Inward RGP"
-};
-
 /**
  * @namespace mgatepass.config.controller
  */
@@ -37,10 +30,6 @@ export default class AppController extends BaseController {
 		}
 
 		this.getView()!.bindElement({ path: sPath });
-	}
-
-	public formatGatepassType(sType: string): string {
-		return GATEPASS_TYPE_LABELS[sType] ?? sType;
 	}
 
 	public onAddCarrier(): void {

@@ -21,13 +21,7 @@ import type Table from "sap/m/Table";
 import type DateRangeSelection from "sap/m/DateRangeSelection";
 import type Input from "sap/m/Input";
 import type Event from "sap/ui/base/Event";
-
-const GATEPASS_TYPE_LABELS: Record<string, string> = {
-	Returnable: "Returnable",
-	NonReturnable: "Non-Returnable",
-	AgainstOutwardRGP: "Against Outward RGP",
-	AgainstInwardRGP: "Against Inward RGP"
-};
+import formatter from "mgatepass/approval/model/formatter";
 
 interface ColumnDef {
 	labelKey: string;
@@ -113,7 +107,6 @@ interface DetailData {
 	createdBy: string;
 	processType: string;
 	gatepassType: string;
-	gatepassTypeFormatted: string;
 	documents: string;
 	weighbridgeRequired: boolean;
 	isReturnable: boolean;
@@ -181,18 +174,6 @@ export default class AppController extends BaseController {
 		this.applyFilters();
 	}
 
-	public formatDocuments(aDocuments: unknown): string {
-		if (!aDocuments) return "";
-		if (typeof aDocuments === "string") return aDocuments;
-		if (Array.isArray(aDocuments)) {
-			return aDocuments
-				.map((d: unknown) => (typeof d === "object" && d !== null) ? (d as Record<string, unknown>).value : d)
-				.filter(Boolean)
-				.join(", ");
-		}
-		return String(aDocuments);
-	}
-
 	public onRefreshTable(): void {
 		const oTable = this.byId("passesTable") as Table;
 		const oBinding = oTable?.getBinding("items") as ODataListBinding;
@@ -228,11 +209,10 @@ export default class AppController extends BaseController {
 				createdBy: oContext.getProperty("createdBy") as string,
 				processType,
 				gatepassType,
-				gatepassTypeFormatted: GATEPASS_TYPE_LABELS[gatepassType] ?? gatepassType,
-				documents: this.formatDocuments(rawDocs),
+				documents: formatter.formatDocuments(rawDocs),
 				weighbridgeRequired: oContext.getProperty("weighbridgeRequired") as boolean,
 				isReturnable: gatepassType === "Returnable",
-				expectedReturnDate: (oContext.getProperty("expectedReturnDate") as string) ?? "",
+				expectedReturnDate: oContext.getProperty("expectedReturnDate") as string,
 				carrierType: "",
 				transporterName: "",
 				driverName: "",

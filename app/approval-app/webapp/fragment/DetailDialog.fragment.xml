@@ -2,6 +2,7 @@
 	xmlns="sap.m"
 	xmlns:core="sap.ui.core"
 	xmlns:form="sap.ui.layout.form"
+	core:require="{ formatter: 'mgatepass/approval/model/formatter' }"
 >
 	<Dialog
 		id="detailDialog"
@@ -22,13 +23,13 @@
 					<Label text="{i18n>passNumber}"/>
 					<Text text="{detail>/passNumber}"/>
 					<Label text="{i18n>createdAt}"/>
-					<Text text="{detail>/createdAt}"/>
+					<Text text="{ path: 'detail>/createdAt', formatter: 'formatter.formatDateTime' }"/>
 					<Label text="{i18n>createdBy}"/>
 					<Text text="{detail>/createdBy}"/>
 					<Label text="{i18n>processType}"/>
 					<Text text="{detail>/processType}"/>
 					<Label text="{i18n>gatepassType}"/>
-					<Text text="{detail>/gatepassTypeFormatted}"/>
+					<Text text="{ path: 'detail>/gatepassType', formatter: 'formatter.formatGatepassType' }"/>
 					<Label text="{i18n>documentNumber}"/>
 					<Text text="{detail>/documents}"/>
 					<Label text="{i18n>weighbridgeApplicable}"/>
@@ -48,7 +49,7 @@
 				>
 					<core:Title text="{i18n>sectionReturnDetails}"/>
 					<Label text="{i18n>expectedReturnDate}"/>
-					<Text text="{detail>/expectedReturnDate}"/>
+					<Text text="{ path: 'detail>/expectedReturnDate', formatter: 'formatter.formatDateTime' }"/>
 				</form:SimpleForm>
 
 				<Panel class="sapUiSmallMarginTop">
