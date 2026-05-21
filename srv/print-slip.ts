@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import Handlebars from 'handlebars'
-import type { Pass, PassAuditLog } from '#cds-models/GatepassService'
+import type { Pass } from '#cds-models/GatepassService'
 
 const templateSource = readFileSync(resolve(__dirname, 'templates/print-slip.hbs'), 'utf-8')
 
@@ -81,13 +81,12 @@ interface PrintData {
     weight: Record<string, unknown> | null
     entryGate: Record<string, unknown> | null
     exitGate: Record<string, unknown> | null
-    auditLogs: PassAuditLog[]
     companyLogo: string | null
     weightUnit: string
 }
 
 export function buildPrintSlipHtml(data: PrintData): string {
-    const { pass, vehicle, vehicleType, driver, weight, entryGate, exitGate, auditLogs, companyLogo, weightUnit } = data
+    const { pass, vehicle, vehicleType, driver, weight, entryGate, exitGate, companyLogo, weightUnit } = data
     const p = pass as unknown as Record<string, unknown>
 
     const entryWeight = weight?.entryWeight as number | null
@@ -108,7 +107,8 @@ export function buildPrintSlipHtml(data: PrintData): string {
         driverContact: driver?.contactNumber ?? null,
         entryWeight: entryWeight,
         exitWeight: exitWeight,
-        netWeight: netWeight
+        netWeight: netWeight,
+        weighbridgeApplicable: pass.weighbridgeRequired ?? false
     }))
 
     const docs = pass.documents as unknown
@@ -150,12 +150,6 @@ export function buildPrintSlipHtml(data: PrintData): string {
         hasNetWeight: netWeight != null,
         companyLogo,
         qrUrl: `https://api.qrserver.com/v1/create-qr-code/?size=128x128&ecc=L&data=${qrData}`,
-        auditLogs: auditLogs.map(log => ({
-            action: log.action,
-            performedBy: log.performedBy,
-            performedAt: fmtDateTime(log.performedAt as unknown as string),
-            remarks: log.remarks
-        })),
         printedAt: new Date().toLocaleString('en-IN')
     }
 

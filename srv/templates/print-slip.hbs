@@ -146,51 +146,6 @@
     font-weight: bold;
   }
 
-  .timeline {
-    position: relative;
-    padding-left: 20px;
-  }
-  .timeline::before {
-    content: '';
-    position: absolute;
-    left: 6px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background: #ddd;
-  }
-  .timeline-item {
-    position: relative;
-    padding-bottom: 12px;
-    padding-left: 16px;
-  }
-  .timeline-item:last-child { padding-bottom: 0; }
-  .timeline-dot {
-    position: absolute;
-    left: -17px;
-    top: 3px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: #003b5c;
-    border: 2px solid #fff;
-    box-shadow: 0 0 0 1px #003b5c;
-  }
-  .timeline-action {
-    font-size: 13px;
-    font-weight: 600;
-    color: #1a1a1a;
-  }
-  .timeline-time {
-    font-size: 11px;
-    color: #888;
-    margin-top: 1px;
-  }
-  .timeline-details {
-    font-size: 11px;
-    color: #555;
-    margin-top: 2px;
-  }
   .no-data {
     font-size: 12px;
     color: #aaa;
@@ -308,26 +263,6 @@
       <div><div class="field-label">Approved By</div><div class="field-value">{{val approvedBy}}</div></div>
       <div><div class="field-label">Approved At</div><div class="field-value">{{val approvedAt}}</div></div>
     </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Audit Trail</div>
-    {{#if auditLogs.length}}
-    <div class="timeline">
-      {{#each auditLogs}}
-      <div class="timeline-item">
-        <div class="timeline-dot"></div>
-        <div class="timeline-content">
-          <div class="timeline-action">{{action}} — {{performedBy}}</div>
-          <div class="timeline-time">{{performedAt}}</div>
-          {{#if remarks}}<div class="timeline-details">{{remarks}}</div>{{/if}}
-        </div>
-      </div>
-      {{/each}}
-    </div>
-    {{else}}
-    <div class="no-data">No audit records</div>
-    {{/if}}
   </div>
 
   <div class="section">

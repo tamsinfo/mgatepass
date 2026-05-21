@@ -351,7 +351,7 @@ export default class GatepassService extends cds.ApplicationService {
         this.on('printPass', 'Passes', async (req) => {
             const passId = req.params[0] as string
 
-            const { Passes, Vehicles, VehicleTypes, Drivers, Weights, Gates, PassAuditLogs } = this.entities
+            const { Passes, Vehicles, VehicleTypes, Drivers, Weights, Gates } = this.entities
             const pass = await SELECT.one.from(Passes).where({ ID: passId }) as Pass | null
             if (!pass) return req.error(404, `Pass ${passId} not found`)
 
@@ -362,10 +362,6 @@ export default class GatepassService extends cds.ApplicationService {
             const entryGate = pass.entryGate_ID ? await SELECT.one.from(Gates).where({ ID: pass.entryGate_ID }) as Record<string, unknown> | null : null
             const exitGate = pass.exitGate_ID ? await SELECT.one.from(Gates).where({ ID: pass.exitGate_ID }) as Record<string, unknown> | null : null
 
-            const auditLogs = await SELECT.from(PassAuditLogs)
-                .where({ pass_ID: passId })
-                .orderBy('performedAt asc') as PassAuditLog[]
-
             const { AppConfig } = this.entities
             const config = await SELECT.one.from(AppConfig) as Record<string, unknown> | null
             const companyLogo = (config?.companyLogo as string) || null
@@ -375,7 +371,7 @@ export default class GatepassService extends cds.ApplicationService {
 
             return buildPrintSlipHtml({
                 pass, vehicle, vehicleType, driver, weight,
-                entryGate, exitGate, auditLogs, companyLogo, weightUnit
+                entryGate, exitGate, companyLogo, weightUnit
             })
         })
 
