@@ -43,6 +43,11 @@ interface CarrierFieldState {
 	driverContact: boolean;
 }
 
+interface GatepassTypeOption {
+	key: string;
+	text: string;
+}
+
 interface DialogFormData {
 	title: string;
 	isEditMode: boolean;
@@ -50,10 +55,12 @@ interface DialogFormData {
 	editPassPath: string | null;
 	processType: string;
 	gatepassType: string;
+	gatepassTypeOptions: GatepassTypeOption[];
 	documents: string[];
 	weighbridgeEnabled: boolean;
 	weighbridgeRequired: boolean;
 	showReturnDate: boolean;
+	returnDateRequired: boolean;
 	expectedReturnDate: string;
 	showCarrierSection: boolean;
 	vehicleType: string;
@@ -279,6 +286,24 @@ export default class AppController extends BaseController {
 		if (oBinding) oBinding.refresh();
 	}
 
+	private getGatepassTypeOptions(processType: string): GatepassTypeOption[] {
+		const all: GatepassTypeOption[] = [
+			{ key: "", text: "" },
+			{ key: "NonReturnable", text: this.getResourceText("gatepassTypeNonReturnable") },
+			{ key: "Returnable", text: this.getResourceText("gatepassTypeReturnable") }
+		];
+		if (processType === "Inward") {
+			all.push({ key: "AgainstOutwardRGP", text: this.getResourceText("gatepassTypeAgainstOutwardRGP") });
+		} else if (processType === "Outward") {
+			all.push({ key: "AgainstInwardRGP", text: this.getResourceText("gatepassTypeAgainstInwardRGP") });
+		}
+		return all;
+	}
+
+	private isReturnDateRequired(processType: string, gatepassType: string): boolean {
+		return processType === "Outward" && (gatepassType === "Returnable" || gatepassType === "NonReturnable");
+	}
+
 	private getDefaultFormData(isEditMode = false): DialogFormData {
 		return {
 			title: this.getResourceText(isEditMode ? "editGatepassTitle" : "createGatepassTitle"),
@@ -287,10 +312,12 @@ export default class AppController extends BaseController {
 			editPassPath: null,
 			processType: "",
 			gatepassType: "",
+			gatepassTypeOptions: this.getGatepassTypeOptions(""),
 			documents: [],
 			weighbridgeEnabled: this._weighbridgeEnabled,
 			weighbridgeRequired: false,
 			showReturnDate: false,
+			returnDateRequired: false,
 			expectedReturnDate: "",
 			showCarrierSection: isEditMode,
 			vehicleType: "",
@@ -339,7 +366,9 @@ export default class AppController extends BaseController {
 		formData.gatepassType = oContext.getProperty("gatepassType") as string;
 		formData.weighbridgeRequired = oContext.getProperty("weighbridgeRequired") as boolean;
 		formData.expectedReturnDate = (oContext.getProperty("expectedReturnDate") as string) ?? "";
-		formData.showReturnDate = formData.gatepassType === "Returnable";
+		formData.gatepassTypeOptions = this.getGatepassTypeOptions(formData.processType);
+		formData.showReturnDate = formData.gatepassType === "Returnable" || this.isReturnDateRequired(formData.processType, formData.gatepassType);
+		formData.returnDateRequired = this.isReturnDateRequired(formData.processType, formData.gatepassType);
 		formData.showCarrierSection = true;
 		formData.entryGate = (oContext.getProperty("entryGate_ID") as string) ?? "";
 
@@ -421,6 +450,14 @@ export default class AppController extends BaseController {
 			if (!isEditMode) {
 				model.setProperty("/showCarrierSection", processType === "Inward");
 			}
+			model.setProperty("/gatepassTypeOptions", this.getGatepassTypeOptions(processType));
+			const currentType = model.getProperty("/gatepassType") as string;
+			const validKeys = this.getGatepassTypeOptions(processType).map(o => o.key);
+			if (currentType && !validKeys.includes(currentType)) {
+				model.setProperty("/gatepassType", "");
+				model.setProperty("/showReturnDate", false);
+				model.setProperty("/returnDateRequired", false);
+			}
 			this.updateApprovalRequired(model);
 		});
 	}
@@ -428,8 +465,11 @@ export default class AppController extends BaseController {
 	public onGatepassTypeChange(): void {
 		this.getDialog().then(d => {
 			const model = d.getModel("dialog") as JSONModel;
+			const processType = model.getProperty("/processType") as string;
 			const gatepassType = model.getProperty("/gatepassType") as string;
-			model.setProperty("/showReturnDate", gatepassType === "Returnable");
+			const showReturn = gatepassType === "Returnable" || this.isReturnDateRequired(processType, gatepassType);
+			model.setProperty("/showReturnDate", showReturn);
+			model.setProperty("/returnDateRequired", this.isReturnDateRequired(processType, gatepassType));
 			this.updateApprovalRequired(model);
 		});
 	}
@@ -574,6 +614,10 @@ export default class AppController extends BaseController {
 		}
 		if (documents.length === 0) {
 			MessageBox.error(this.getResourceText("validationDocumentNumber"));
+			return false;
+		}
+		if (this.isReturnDateRequired(data.processType, data.gatepassType) && !data.expectedReturnDate) {
+			MessageBox.error(this.getResourceText("validationExpectedReturnDate"));
 			return false;
 		}
 		return true;

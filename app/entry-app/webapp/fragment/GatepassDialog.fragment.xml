@@ -40,13 +40,10 @@
 						change=".onGatepassTypeChange"
 						forceSelection="false"
 						enabled="{= !${dialog>/isEditMode}}"
+						items="{dialog>/gatepassTypeOptions}"
 					>
 						<items>
-							<core:Item key="" text=""/>
-							<core:Item key="NonReturnable" text="{i18n>gatepassTypeNonReturnable}"/>
-							<core:Item key="Returnable" text="{i18n>gatepassTypeReturnable}"/>
-							<core:Item key="AgainstOutwardRGP" text="{i18n>gatepassTypeAgainstOutwardRGP}"/>
-							<core:Item key="AgainstInwardRGP" text="{i18n>gatepassTypeAgainstInwardRGP}"/>
+							<core:Item key="{dialog>key}" text="{dialog>text}"/>
 						</items>
 					</Select>
 
@@ -71,10 +68,13 @@
 					<Label
 						text="{i18n>expectedReturnDate}"
 						visible="{dialog>/showReturnDate}"
+						required="{dialog>/returnDateRequired}"
 					/>
 					<DatePicker
 						id="expectedReturnDatePicker"
 						value="{dialog>/expectedReturnDate}"
+						valueFormat="yyyy-MM-dd"
+						displayFormat="dd/MM/yyyy"
 						visible="{dialog>/showReturnDate}"
 					/>
 				</form:SimpleForm>
