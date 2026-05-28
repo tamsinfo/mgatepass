@@ -93,7 +93,6 @@ const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
 	Outward_AgainstInwardRGP: [
 		{ labelKey: "colDocNumber", property: "documentNumber" },
 		{ labelKey: "colLineItem", property: "lineItem" },
-		{ labelKey: "colPurchaseOrder", property: "purchaseOrder" },
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
@@ -297,7 +296,7 @@ export default class AppController extends BaseController {
 				exitWeight: exitWeight != null ? String(exitWeight) : "",
 				netWeight: this.formatNetWeight(entryWeight, exitWeight),
 				hasWeights,
-				exitGateId: "",
+				exitGateId: ((this.getView()!.getModel("gates") as JSONModel).getData() as GateItem[])[0]?.ID ?? "",
 				passPath: oContext.getPath(),
 				items: []
 			};
