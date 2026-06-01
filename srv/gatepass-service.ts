@@ -43,7 +43,10 @@ export default class GatepassService extends cds.ApplicationService {
             if (!processType || !gatepassType) {
                 return req.error(400, 'processType and gatepassType are required')
             }
-            if (!documents?.length) {
+
+            const isInwardReturnable = processType === 'Inward' && gatepassType === 'Returnable'
+
+            if (!isInwardReturnable && !documents?.length) {
                 return req.error(400, 'At least one document number is required')
             }
 
@@ -53,13 +56,9 @@ export default class GatepassService extends cds.ApplicationService {
                 return req.error(400, `Invalid combination: ${processType} + ${gatepassType}`)
             }
 
-            const sanitizedDocs = documents
+            const sanitizedDocs = (documents || [])
                 .map((d: string) => d?.trim())
                 .filter(Boolean)
-
-            if (!sanitizedDocs.length) {
-                return req.error(400, 'Document numbers cannot be empty')
-            }
 
             const passNumber = await this.generatePassNumber(processType)
 
@@ -756,7 +755,7 @@ export default class GatepassService extends cds.ApplicationService {
         }))
     }
 
-    private async fetchGatepassItems(passNumbers: string[], _inputField: string): Promise<NormalizedItem[]> {
+    private async fetchGatepassItems(passNumbers: string[], quantityField: 'receivedQuantity' | 'issueQuantity'): Promise<NormalizedItem[]> {
         const { Passes, GatepassItems } = this.entities
 
         const passes = await SELECT.from(Passes)
@@ -769,13 +768,15 @@ export default class GatepassService extends cds.ApplicationService {
         const items = await SELECT.from(GatepassItems)
             .where({ pass_ID: { in: passIds } }) as GatepassItem[]
 
+        const refField = quantityField === 'receivedQuantity' ? 'issueQuantity' : 'receivedQuantity'
+
         return items.map(item => ({
             lineItem: item.lineItem || '',
             documentNumber: item.documentNumber || '',
             materialCode: item.materialCode || '',
             materialDescription: item.materialDescription || '',
             partyName: item.partyName || '',
-            orderQuantity: item.orderQuantity ? Number(item.orderQuantity) : null,
+            orderQuantity: item[refField] ? Number(item[refField]) : (item.orderQuantity ? Number(item.orderQuantity) : null),
             openQuantity: item.openQuantity ? Number(item.openQuantity) : null,
             purchaseOrder: item.purchaseOrder || null
         }))

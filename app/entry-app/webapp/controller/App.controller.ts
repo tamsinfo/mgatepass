@@ -56,6 +56,7 @@ interface DialogFormData {
 	processType: string;
 	gatepassType: string;
 	gatepassTypeOptions: GatepassTypeOption[];
+	showDocuments: boolean;
 	documents: string[];
 	weighbridgeEnabled: boolean;
 	weighbridgeRequired: boolean;
@@ -155,7 +156,6 @@ const COLUMN_CONFIGS: Record<string, ColumnDef[]> = {
 	Outward_AgainstInwardRGP: [
 		{ labelKey: "colDocNumber", property: "documentNumber" },
 		{ labelKey: "colLineItem", property: "lineItem" },
-		{ labelKey: "colPurchaseOrder", property: "purchaseOrder" },
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
@@ -304,6 +304,10 @@ export default class AppController extends BaseController {
 		return processType === "Outward" && (gatepassType === "Returnable" || gatepassType === "NonReturnable");
 	}
 
+	private needsDocuments(processType: string, gatepassType: string): boolean {
+		return !(processType === "Inward" && gatepassType === "Returnable");
+	}
+
 	private getDefaultFormData(isEditMode = false): DialogFormData {
 		return {
 			title: this.getResourceText(isEditMode ? "editGatepassTitle" : "createGatepassTitle"),
@@ -313,6 +317,7 @@ export default class AppController extends BaseController {
 			processType: "",
 			gatepassType: "",
 			gatepassTypeOptions: this.getGatepassTypeOptions(""),
+			showDocuments: true,
 			documents: [],
 			weighbridgeEnabled: this._weighbridgeEnabled,
 			weighbridgeRequired: false,
@@ -367,6 +372,7 @@ export default class AppController extends BaseController {
 		formData.weighbridgeRequired = oContext.getProperty("weighbridgeRequired") as boolean;
 		formData.expectedReturnDate = (oContext.getProperty("expectedReturnDate") as string) ?? "";
 		formData.gatepassTypeOptions = this.getGatepassTypeOptions(formData.processType);
+		formData.showDocuments = this.needsDocuments(formData.processType, formData.gatepassType);
 		formData.showReturnDate = formData.gatepassType === "Returnable" || this.isReturnDateRequired(formData.processType, formData.gatepassType);
 		formData.returnDateRequired = this.isReturnDateRequired(formData.processType, formData.gatepassType);
 		formData.showCarrierSection = true;
@@ -457,6 +463,9 @@ export default class AppController extends BaseController {
 				model.setProperty("/gatepassType", "");
 				model.setProperty("/showReturnDate", false);
 				model.setProperty("/returnDateRequired", false);
+				model.setProperty("/showDocuments", true);
+			} else {
+				model.setProperty("/showDocuments", this.needsDocuments(processType, model.getProperty("/gatepassType") as string));
 			}
 			this.updateApprovalRequired(model);
 		});
@@ -470,6 +479,7 @@ export default class AppController extends BaseController {
 			const showReturn = gatepassType === "Returnable" || this.isReturnDateRequired(processType, gatepassType);
 			model.setProperty("/showReturnDate", showReturn);
 			model.setProperty("/returnDateRequired", this.isReturnDateRequired(processType, gatepassType));
+			model.setProperty("/showDocuments", this.needsDocuments(processType, gatepassType));
 			this.updateApprovalRequired(model);
 		});
 	}
@@ -612,7 +622,7 @@ export default class AppController extends BaseController {
 			MessageBox.error(this.getResourceText("validationGatepassType"));
 			return false;
 		}
-		if (documents.length === 0) {
+		if (this.needsDocuments(data.processType, data.gatepassType) && documents.length === 0) {
 			MessageBox.error(this.getResourceText("validationDocumentNumber"));
 			return false;
 		}

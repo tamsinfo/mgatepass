@@ -47,9 +47,9 @@
 						</items>
 					</Select>
 
-					<core:Title text="{i18n>sectionDocuments}"/>
-					<Label text="{i18n>documentNumberInput}" required="true"/>
-					<HBox>
+					<core:Title text="{i18n>sectionDocuments}" visible="{dialog>/showDocuments}"/>
+					<Label text="{i18n>documentNumberInput}" required="true" visible="{dialog>/showDocuments}"/>
+					<HBox visible="{dialog>/showDocuments}">
 						<MultiInput id="documentNumberInput" width="100%" submit=".onAddDocument" enabled="{= !${dialog>/isEditMode}}"/>
 						<Button text="{i18n>add}" press=".onAddDocument" class="sapUiTinyMarginBegin" enabled="{= !${dialog>/isEditMode}}"/>
 						<Button text="{i18n>go}" type="Emphasized" press=".onDocumentGo" class="sapUiTinyMarginBegin" enabled="{= !${dialog>/isEditMode}}"/>
@@ -79,7 +79,7 @@
 					/>
 				</form:SimpleForm>
 
-				<Panel class="sapUiSmallMarginTop">
+				<Panel class="sapUiSmallMarginTop" visible="{dialog>/showDocuments}">
 					<Table
 						id="documentItemsTable"
 						noDataText="{i18n>noDocumentItems}"
