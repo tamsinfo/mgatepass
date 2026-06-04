@@ -92,7 +92,6 @@ const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
 	Outward_AgainstInwardRGP: [
 		{ labelKey: "colDocNumber", property: "documentNumber" },
 		{ labelKey: "colLineItem", property: "lineItem" },
-		{ labelKey: "colPurchaseOrder", property: "purchaseOrder" },
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
