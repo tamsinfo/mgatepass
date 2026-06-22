@@ -1,0 +1,84 @@
+<mvc:View
+	controllerName="mgatepass.dashboard.controller.App"
+	xmlns="sap.m"
+	xmlns:mvc="sap.ui.core.mvc"
+	xmlns:core="sap.ui.core"
+	core:require="{ formatter: 'mgatepass/dashboard/model/formatter' }"
+>
+	<App id="app">
+		<Page id="appPage" title="{i18n>appTitle}">
+			<headerContent>
+				<Button
+					icon="sap-icon://refresh"
+					type="Transparent"
+					press=".onRefreshTable"
+					tooltip="{i18n>refresh}"
+				/>
+			</headerContent>
+			<content>
+				<IconTabBar id="statusTabs" select=".onTabSelect" expandable="false">
+					<items>
+						<IconTabFilter text="{i18n>statusAll}" key="All" count="{tabCounts>/All}"/>
+						<IconTabFilter text="{i18n>statusDraft}" key="Draft" count="{tabCounts>/Draft}"/>
+						<IconTabFilter text="{i18n>statusPendingApproval}" key="PendingApproval" count="{tabCounts>/PendingApproval}"/>
+						<IconTabFilter text="{i18n>statusRejected}" key="Rejected" count="{tabCounts>/Rejected}"/>
+						<IconTabFilter text="{i18n>statusCancelled}" key="Cancelled" count="{tabCounts>/Cancelled}"/>
+						<IconTabFilter text="{i18n>statusEntryWeightPending}" key="EntryWeightPending" count="{tabCounts>/EntryWeightPending}"/>
+						<IconTabFilter text="{i18n>statusExitWeightPending}" key="ExitWeightPending" count="{tabCounts>/ExitWeightPending}"/>
+						<IconTabFilter text="{i18n>statusGateExitPending}" key="GateExitPending" count="{tabCounts>/GateExitPending}"/>
+						<IconTabFilter text="{i18n>statusCompleted}" key="Completed" count="{tabCounts>/Completed}"/>
+						<IconTabFilter text="{i18n>statusPartiallyReturned}" key="PartiallyReturned" count="{tabCounts>/PartiallyReturned}"/>
+						<IconTabFilter text="{i18n>statusReturned}" key="Returned" count="{tabCounts>/Returned}"/>
+					</items>
+					<content>
+						<Table
+							id="passesTable"
+							growing="true"
+							growingThreshold="25"
+							noDataText="{i18n>noData}"
+							items="{
+								path: '/Passes',
+								sorter: { path: 'createdAt', descending: true }
+							}"
+						>
+							<columns>
+								<Column>
+									<Text text="{i18n>passNumber}"/>
+								</Column>
+								<Column>
+									<Text text="{i18n>status}"/>
+								</Column>
+								<Column>
+									<Text text="{i18n>createdAt}"/>
+								</Column>
+								<Column>
+									<Text text="{i18n>createdBy}"/>
+								</Column>
+								<Column>
+									<Text text="{i18n>processType}"/>
+								</Column>
+								<Column>
+									<Text text="{i18n>gatepassType}"/>
+								</Column>
+								<Column>
+									<Text text="{i18n>documentNumber}"/>
+								</Column>
+							</columns>
+							<items>
+								<ColumnListItem>
+									<Text text="{passNumber}"/>
+									<Text text="{ path: 'status', formatter: 'formatter.formatStatus' }"/>
+									<Text text="{ path: 'createdAt', formatter: 'formatter.formatDateTime' }"/>
+									<Text text="{createdBy}"/>
+									<Text text="{processType}"/>
+									<Text text="{ path: 'gatepassType', formatter: 'formatter.formatGatepassType' }"/>
+									<Text text="{ path: 'documents', formatter: 'formatter.formatDocuments' }"/>
+								</ColumnListItem>
+							</items>
+						</Table>
+					</content>
+				</IconTabBar>
+			</content>
+		</Page>
+	</App>
+</mvc:View>
