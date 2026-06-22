@@ -39,7 +39,7 @@
 				<Panel>
 					<Table
 						id="passesTable"
-						items="{path: '/Passes', parameters: {$expand: 'weight'}, sorter: {path: 'createdAt', descending: true}, suspended: true}"
+						items="{path: '/Passes', parameters: {$expand: 'weight'}, sorter: {path: 'createdAt', descending: true}, filters: {path: 'status', operator: 'EQ', value1: 'GateExitPending'}}"
 						growing="true"
 						growingThreshold="20"
 						mode="MultiSelect"

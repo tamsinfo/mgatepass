@@ -135,6 +135,9 @@ export default class AppController extends BaseController {
 		this.initResourceBundle();
 		this.getView()!.setModel(new JSONModel({ weightUnit: "" }), "config");
 		this.loadAppConfig();
+	}
+
+	public override onAfterRendering(): void {
 		this.applyFilters();
 	}
 
