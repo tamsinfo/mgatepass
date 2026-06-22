@@ -26,6 +26,7 @@ import formatter from "mgatepass/approval/model/formatter";
 interface ColumnDef {
 	labelKey: string;
 	property: string;
+	showUnit?: boolean;
 }
 
 interface ItemData {
@@ -39,6 +40,7 @@ interface ItemData {
 	receivedQuantity: number | null;
 	issueQuantity: number | null;
 	purchaseOrder: string | null;
+	unitOfMeasurement: string | null;
 }
 
 const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
@@ -48,9 +50,9 @@ const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colOrderQty", property: "orderQuantity" },
-		{ labelKey: "colOpenQty", property: "openQuantity" },
-		{ labelKey: "colReceivedQty", property: "receivedQuantity" }
+		{ labelKey: "colOrderQty", property: "orderQuantity", showUnit: true },
+		{ labelKey: "colOpenQty", property: "openQuantity", showUnit: true },
+		{ labelKey: "colReceivedQty", property: "receivedQuantity", showUnit: true }
 	],
 	Outward_NonReturnable: [
 		{ labelKey: "colDocNumber", property: "documentNumber" },
@@ -58,8 +60,8 @@ const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colBillingQty", property: "orderQuantity" },
-		{ labelKey: "colIssueQty", property: "issueQuantity" }
+		{ labelKey: "colBillingQty", property: "orderQuantity", showUnit: true },
+		{ labelKey: "colIssueQty", property: "issueQuantity", showUnit: true }
 	],
 	Inward_Returnable: [
 		{ labelKey: "colDocNumber", property: "documentNumber" },
@@ -68,8 +70,8 @@ const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colChallanQty", property: "orderQuantity" },
-		{ labelKey: "colReceivedQty", property: "receivedQuantity" }
+		{ labelKey: "colChallanQty", property: "orderQuantity", showUnit: true },
+		{ labelKey: "colReceivedQty", property: "receivedQuantity", showUnit: true }
 	],
 	Outward_Returnable: [
 		{ labelKey: "colDocNumber", property: "documentNumber" },
@@ -77,8 +79,8 @@ const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colChallanQty", property: "orderQuantity" },
-		{ labelKey: "colIssueQty", property: "issueQuantity" }
+		{ labelKey: "colChallanQty", property: "orderQuantity", showUnit: true },
+		{ labelKey: "colIssueQty", property: "issueQuantity", showUnit: true }
 	],
 	Inward_AgainstOutwardRGP: [
 		{ labelKey: "colDocNumber", property: "documentNumber" },
@@ -86,8 +88,8 @@ const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colChallanQty", property: "orderQuantity" },
-		{ labelKey: "colReceivedQty", property: "receivedQuantity" }
+		{ labelKey: "colChallanQty", property: "orderQuantity", showUnit: true },
+		{ labelKey: "colReceivedQty", property: "receivedQuantity", showUnit: true }
 	],
 	Outward_AgainstInwardRGP: [
 		{ labelKey: "colDocNumber", property: "documentNumber" },
@@ -95,8 +97,8 @@ const ITEM_COLUMNS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colChallanQty", property: "orderQuantity" },
-		{ labelKey: "colIssueQty", property: "issueQuantity" }
+		{ labelKey: "colChallanQty", property: "orderQuantity", showUnit: true },
+		{ labelKey: "colIssueQty", property: "issueQuantity", showUnit: true }
 	]
 };
 
@@ -273,7 +275,8 @@ export default class AppController extends BaseController {
 				openQuantity: ctx.getProperty("openQuantity") as number | null,
 				receivedQuantity: ctx.getProperty("receivedQuantity") as number | null,
 				issueQuantity: ctx.getProperty("issueQuantity") as number | null,
-				purchaseOrder: ctx.getProperty("purchaseOrder") as string | null
+				purchaseOrder: ctx.getProperty("purchaseOrder") as string | null,
+				unitOfMeasurement: ctx.getProperty("unitOfMeasurement") as string | null
 			}));
 			itemsBinding.destroy();
 
@@ -307,9 +310,20 @@ export default class AppController extends BaseController {
 		oTable.bindItems({
 			path: "detail>/items",
 			template: new ColumnListItem({
-				cells: columns.map(col =>
-					new Text({ text: `{detail>${col.property}}` })
-				)
+				cells: columns.map(col => {
+					if (col.showUnit) {
+						return new Text({
+							text: {
+								parts: [{ path: `detail>${col.property}` }, { path: "detail>unitOfMeasurement" }],
+								formatter: (qty: number | null, uom: string | null) => {
+									if (qty == null) return "";
+									return uom ? `${qty} ${uom}` : String(qty);
+								}
+							} as object
+						});
+					}
+					return new Text({ text: `{detail>${col.property}}` });
+				})
 			})
 		});
 	}

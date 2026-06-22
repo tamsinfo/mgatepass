@@ -90,6 +90,7 @@ interface ColumnDef {
 	labelKey: string;
 	property: string;
 	isInput?: boolean;
+	showUnit?: boolean;
 }
 
 interface ItemData {
@@ -103,6 +104,7 @@ interface ItemData {
 	receivedQuantity: number | null;
 	issueQuantity: number | null;
 	purchaseOrder: string | null;
+	unitOfMeasurement: string | null;
 }
 
 const COLUMN_CONFIGS: Record<string, ColumnDef[]> = {
@@ -112,8 +114,8 @@ const COLUMN_CONFIGS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colOrderQty", property: "orderQuantity" },
-		{ labelKey: "colOpenQty", property: "openQuantity" },
+		{ labelKey: "colOrderQty", property: "orderQuantity", showUnit: true },
+		{ labelKey: "colOpenQty", property: "openQuantity", showUnit: true },
 		{ labelKey: "colReceivedQty", property: "receivedQuantity", isInput: true }
 	],
 	Outward_NonReturnable: [
@@ -122,7 +124,7 @@ const COLUMN_CONFIGS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colBillingQty", property: "orderQuantity" },
+		{ labelKey: "colBillingQty", property: "orderQuantity", showUnit: true },
 		{ labelKey: "colIssueQty", property: "issueQuantity", isInput: true }
 	],
 	Inward_Returnable: [
@@ -132,7 +134,7 @@ const COLUMN_CONFIGS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colChallanQty", property: "orderQuantity", showUnit: true },
 		{ labelKey: "colReceivedQty", property: "receivedQuantity", isInput: true }
 	],
 	Outward_Returnable: [
@@ -141,7 +143,7 @@ const COLUMN_CONFIGS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colChallanQty", property: "orderQuantity", showUnit: true },
 		{ labelKey: "colIssueQty", property: "issueQuantity", isInput: true }
 	],
 	Inward_AgainstOutwardRGP: [
@@ -150,7 +152,7 @@ const COLUMN_CONFIGS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colChallanQty", property: "orderQuantity", showUnit: true },
 		{ labelKey: "colReceivedQty", property: "receivedQuantity", isInput: true }
 	],
 	Outward_AgainstInwardRGP: [
@@ -159,7 +161,7 @@ const COLUMN_CONFIGS: Record<string, ColumnDef[]> = {
 		{ labelKey: "colMaterialCode", property: "materialCode" },
 		{ labelKey: "colMaterialDesc", property: "materialDescription" },
 		{ labelKey: "colPartyName", property: "partyName" },
-		{ labelKey: "colChallanQty", property: "orderQuantity" },
+		{ labelKey: "colChallanQty", property: "orderQuantity", showUnit: true },
 		{ labelKey: "colIssueQty", property: "issueQuantity", isInput: true }
 	]
 };
@@ -428,7 +430,8 @@ export default class AppController extends BaseController {
 			openQuantity: ctx.getProperty("openQuantity") as number | null,
 			receivedQuantity: ctx.getProperty("receivedQuantity") as number | null,
 			issueQuantity: ctx.getProperty("issueQuantity") as number | null,
-			purchaseOrder: ctx.getProperty("purchaseOrder") as string | null
+			purchaseOrder: ctx.getProperty("purchaseOrder") as string | null,
+			unitOfMeasurement: ctx.getProperty("unitOfMeasurement") as string | null
 		}));
 		itemsBinding.destroy();
 
@@ -568,6 +571,17 @@ export default class AppController extends BaseController {
 						return new Input({
 							value: `{dialog>${col.property}}`,
 							type: "Number"
+						});
+					}
+					if (col.showUnit) {
+						return new Text({
+							text: {
+								parts: [{ path: `dialog>${col.property}` }, { path: "dialog>unitOfMeasurement" }],
+								formatter: (qty: number | null, uom: string | null) => {
+									if (qty == null) return "";
+									return uom ? `${qty} ${uom}` : String(qty);
+								}
+							} as object
 						});
 					}
 					return new Text({ text: `{dialog>${col.property}}` });

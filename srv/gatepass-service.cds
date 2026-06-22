@@ -76,6 +76,7 @@ service GatepassService @(requires: ['Administrator', 'WeighbridgeOperator', 'Ga
         receivedQuantity    : Decimal(13, 3);
         issueQuantity       : Decimal(13, 3);
         purchaseOrder       : String(10);
+        unitOfMeasurement   : String(3);
     }
 
     @(requires: ['Administrator', 'GateOperator'])

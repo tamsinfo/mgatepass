@@ -15,6 +15,7 @@ interface NormalizedItem {
     orderQuantity: number | null
     openQuantity: number | null
     purchaseOrder: string | null
+    unitOfMeasurement: string | null
 }
 
 const DOCUMENT_TYPE_MAP: Record<string, DocumentType> = {
@@ -119,7 +120,8 @@ export default class GatepassService extends cds.ApplicationService {
                     openQuantity: item.openQuantity ?? null,
                     receivedQuantity: item.receivedQuantity ?? null,
                     issueQuantity: item.issueQuantity ?? null,
-                    purchaseOrder: item.purchaseOrder || 'N/A'
+                    purchaseOrder: item.purchaseOrder || 'N/A',
+                    unitOfMeasurement: item.unitOfMeasurement || null
                 }))
                 await INSERT.into(GatepassItems).entries(itemEntries)
             }
@@ -529,7 +531,8 @@ export default class GatepassService extends cds.ApplicationService {
                         openQuantity: item.openQuantity ?? null,
                         receivedQuantity: item.receivedQuantity ?? null,
                         issueQuantity: item.issueQuantity ?? null,
-                        purchaseOrder: item.purchaseOrder ?? null
+                        purchaseOrder: item.purchaseOrder ?? null,
+                        unitOfMeasurement: item.unitOfMeasurement || null
                     }))
                     await INSERT.into(GatepassItems).entries(itemEntries)
                 }
@@ -656,7 +659,7 @@ export default class GatepassService extends cds.ApplicationService {
             ) as Promise<Record<string, unknown>[]>,
             poSrv.run(
                 SELECT.from(PurchaseOrderItem)
-                    .columns('PurchaseOrder', 'PurchaseOrderItem', 'Material', 'PurchaseOrderItemText', 'OrderQuantity')
+                    .columns('PurchaseOrder', 'PurchaseOrderItem', 'Material', 'PurchaseOrderItemText', 'OrderQuantity', 'PurchaseOrderQuantityUnit')
                     .where({ PurchaseOrder: { in: docNumbers } })
             ) as Promise<Record<string, unknown>[]>,
             poSrv.run(
@@ -685,7 +688,8 @@ export default class GatepassService extends cds.ApplicationService {
             partyName: supplierMap.get(item.PurchaseOrder as string) || '',
             orderQuantity: Number(item.OrderQuantity) || null,
             openQuantity: openQtyMap.get(`${item.PurchaseOrder}_${item.PurchaseOrderItem}`) ?? null,
-            purchaseOrder: null
+            purchaseOrder: null,
+            unitOfMeasurement: String(item.PurchaseOrderQuantityUnit || '') || null
         }))
     }
 
@@ -701,7 +705,7 @@ export default class GatepassService extends cds.ApplicationService {
             ) as Promise<Record<string, unknown>[]>,
             bdSrv.run(
                 SELECT.from(A_BillingDocumentItem)
-                    .columns('BillingDocument', 'BillingDocumentItem', 'Material', 'BillingDocumentItemText', 'BillingQuantity')
+                    .columns('BillingDocument', 'BillingDocumentItem', 'Material', 'BillingDocumentItemText', 'BillingQuantity', 'BillingQuantityUnit')
                     .where({ BillingDocument: { in: docNumbers } })
             ) as Promise<Record<string, unknown>[]>
         ])
@@ -722,7 +726,8 @@ export default class GatepassService extends cds.ApplicationService {
                 partyName: partyMap.get(item.BillingDocument as string) || '',
                 orderQuantity: Number(item.BillingQuantity) || null,
                 openQuantity: null,
-                purchaseOrder: null
+                purchaseOrder: null,
+                unitOfMeasurement: String(item.BillingQuantityUnit || '') || null
             }))
     }
 
@@ -734,7 +739,7 @@ export default class GatepassService extends cds.ApplicationService {
                 .columns(
                     'MaterialDocument', 'MaterialDocumentItem', 'Material',
                     'MaterialDocumentItemText', 'Supplier', 'PurchaseOrder',
-                    'GoodsMovementType', 'InventorySpecialStockType', 'QuantityInBaseUnit'
+                    'GoodsMovementType', 'InventorySpecialStockType', 'QuantityInBaseUnit', 'MaterialBaseUnit'
                 )
                 .where({
                     MaterialDocument: { in: docNumbers },
@@ -751,16 +756,18 @@ export default class GatepassService extends cds.ApplicationService {
             partyName: String(item.Supplier || ''),
             orderQuantity: Number(item.QuantityInBaseUnit) || null,
             openQuantity: null,
-            purchaseOrder: String(item.PurchaseOrder || '') || null
+            purchaseOrder: String(item.PurchaseOrder || '') || null,
+            unitOfMeasurement: String(item.MaterialBaseUnit || '') || null
         }))
     }
 
     private async fetchGatepassItems(passNumbers: string[], quantityField: 'receivedQuantity' | 'issueQuantity'): Promise<NormalizedItem[]> {
         const { Passes, GatepassItems } = this.entities
 
+        const validStatuses = ['Completed', 'PartiallyReturned']
         const passes = await SELECT.from(Passes)
-            .columns('ID')
-            .where({ passNumber: { in: passNumbers } }) as { ID: string }[]
+            .columns('ID', 'passNumber', 'status')
+            .where({ passNumber: { in: passNumbers }, status: { in: validStatuses } }) as { ID: string; passNumber: string; status: string }[]
 
         if (!passes.length) return []
         const passIds = passes.map(p => p.ID)
@@ -778,7 +785,8 @@ export default class GatepassService extends cds.ApplicationService {
             partyName: item.partyName || '',
             orderQuantity: item[refField] ? Number(item[refField]) : (item.orderQuantity ? Number(item.orderQuantity) : null),
             openQuantity: item.openQuantity ? Number(item.openQuantity) : null,
-            purchaseOrder: item.purchaseOrder || null
+            purchaseOrder: item.purchaseOrder || null,
+            unitOfMeasurement: item.unitOfMeasurement || null
         }))
     }
 }
