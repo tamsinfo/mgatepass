@@ -200,6 +200,7 @@ export default class AppController extends BaseController {
 		}
 
 		oBinding.filter(aFilters);
+		if (oBinding.isSuspended()) oBinding.resume();
 	}
 
 	public onSearch(): void {
