@@ -368,11 +368,15 @@ export default class GatepassService extends cds.ApplicationService {
             const companyLogo = (config?.companyLogo as string) || null
             const weightUnit = (config?.weightUnit as string) || 'kg'
 
+            const { GatepassItems } = this.entities
+            const firstItem = await SELECT.one.from(GatepassItems).columns('partyName').where({ pass_ID: passId }) as { partyName: string | null } | null
+
             await this.updateAuditLog(passId, 'Printed', pass.status!, req.user.id, null)
 
             return buildPrintSlipHtml({
                 pass, vehicle, vehicleType, driver, weight,
-                entryGate, exitGate, companyLogo, weightUnit
+                entryGate, exitGate, companyLogo, weightUnit,
+                supplierName: firstItem?.partyName || null
             })
         })
 

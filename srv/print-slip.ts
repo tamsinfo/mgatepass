@@ -83,10 +83,11 @@ interface PrintData {
     exitGate: Record<string, unknown> | null
     companyLogo: string | null
     weightUnit: string
+    supplierName: string | null
 }
 
 export function buildPrintSlipHtml(data: PrintData): string {
-    const { pass, vehicle, vehicleType, driver, weight, entryGate, exitGate, companyLogo, weightUnit } = data
+    const { pass, vehicle, vehicleType, driver, weight, entryGate, exitGate, companyLogo, weightUnit, supplierName } = data
     const p = pass as unknown as Record<string, unknown>
 
     const entryWeight = weight?.entryWeight as number | null
@@ -148,6 +149,7 @@ export function buildPrintSlipHtml(data: PrintData): string {
         hasEntryWeight: entryWeight != null,
         hasExitWeight: exitWeight != null,
         hasNetWeight: netWeight != null,
+        supplierName,
         companyLogo,
         qrUrl: `https://api.qrserver.com/v1/create-qr-code/?size=128x128&ecc=L&data=${qrData}`,
         printedAt: new Date().toLocaleString('en-IN')
