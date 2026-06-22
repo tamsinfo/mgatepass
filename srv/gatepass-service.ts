@@ -376,7 +376,7 @@ export default class GatepassService extends cds.ApplicationService {
             return buildPrintSlipHtml({
                 pass, vehicle, vehicleType, driver, weight,
                 entryGate, exitGate, companyLogo, weightUnit,
-                supplierName: firstItem?.partyName || null
+                partyName: firstItem?.partyName || null
             })
         })
 
@@ -651,6 +651,40 @@ export default class GatepassService extends cds.ApplicationService {
         return (data as Record<string, unknown>).ID as string
     }
 
+    private async resolveSupplierNames(supplierCodes: string[]): Promise<Map<string, string>> {
+        const unique = [...new Set(supplierCodes.filter(Boolean))]
+        if (!unique.length) return new Map()
+        const bpSrv = await cds.connect.to('API_BUSINESS_PARTNER')
+        const { A_Supplier } = bpSrv.entities
+        const suppliers = await bpSrv.run(
+            SELECT.from(A_Supplier)
+                .columns('Supplier', 'SupplierName')
+                .where({ Supplier: { in: unique } })
+        ) as Record<string, unknown>[]
+        const nameMap = new Map<string, string>()
+        for (const s of suppliers) {
+            nameMap.set(s.Supplier as string, String(s.SupplierName || s.Supplier))
+        }
+        return nameMap
+    }
+
+    private async resolveCustomerNames(customerCodes: string[]): Promise<Map<string, string>> {
+        const unique = [...new Set(customerCodes.filter(Boolean))]
+        if (!unique.length) return new Map()
+        const bpSrv = await cds.connect.to('API_BUSINESS_PARTNER')
+        const { A_Customer } = bpSrv.entities
+        const customers = await bpSrv.run(
+            SELECT.from(A_Customer)
+                .columns('Customer', 'CustomerName')
+                .where({ Customer: { in: unique } })
+        ) as Record<string, unknown>[]
+        const nameMap = new Map<string, string>()
+        for (const c of customers) {
+            nameMap.set(c.Customer as string, String(c.CustomerName || c.Customer))
+        }
+        return nameMap
+    }
+
     private async fetchPurchaseOrderItems(docNumbers: string[]): Promise<NormalizedItem[]> {
         const poSrv = await cds.connect.to('CE_PURCHASEORDER_0001')
         const { PurchaseOrder, PurchaseOrderItem, PurchaseOrderScheduleLine } = poSrv.entities
@@ -673,10 +707,12 @@ export default class GatepassService extends cds.ApplicationService {
             ) as Promise<Record<string, unknown>[]>
         ])
 
-        const supplierMap = new Map<string, string>()
+        const supplierCodeMap = new Map<string, string>()
         for (const o of orders) {
-            supplierMap.set(o.PurchaseOrder as string, String(o.Supplier || ''))
+            supplierCodeMap.set(o.PurchaseOrder as string, String(o.Supplier || ''))
         }
+
+        const supplierNames = await this.resolveSupplierNames([...supplierCodeMap.values()])
 
         const openQtyMap = new Map<string, number>()
         for (const sl of schedLines) {
@@ -684,17 +720,20 @@ export default class GatepassService extends cds.ApplicationService {
             openQtyMap.set(key, (openQtyMap.get(key) || 0) + Number(sl.OpenPurchaseOrderQuantity || 0))
         }
 
-        return poItems.map(item => ({
-            lineItem: String(item.PurchaseOrderItem),
-            documentNumber: String(item.PurchaseOrder),
-            materialCode: String(item.Material || ''),
-            materialDescription: String(item.PurchaseOrderItemText || ''),
-            partyName: supplierMap.get(item.PurchaseOrder as string) || '',
-            orderQuantity: Number(item.OrderQuantity) || null,
-            openQuantity: openQtyMap.get(`${item.PurchaseOrder}_${item.PurchaseOrderItem}`) ?? null,
-            purchaseOrder: null,
-            unitOfMeasurement: String(item.PurchaseOrderQuantityUnit || '') || null
-        }))
+        return poItems.map(item => {
+            const supplierCode = supplierCodeMap.get(item.PurchaseOrder as string) || ''
+            return {
+                lineItem: String(item.PurchaseOrderItem),
+                documentNumber: String(item.PurchaseOrder),
+                materialCode: String(item.Material || ''),
+                materialDescription: String(item.PurchaseOrderItemText || ''),
+                partyName: supplierNames.get(supplierCode) || supplierCode,
+                orderQuantity: Number(item.OrderQuantity) || null,
+                openQuantity: openQtyMap.get(`${item.PurchaseOrder}_${item.PurchaseOrderItem}`) ?? null,
+                purchaseOrder: null,
+                unitOfMeasurement: String(item.PurchaseOrderQuantityUnit || '') || null
+            }
+        })
     }
 
     private async fetchBillingDocItems(docNumbers: string[], billingDocType: string): Promise<NormalizedItem[]> {
@@ -715,24 +754,29 @@ export default class GatepassService extends cds.ApplicationService {
         ])
 
         const validDocs = new Set(headers.map(h => h.BillingDocument as string))
-        const partyMap = new Map<string, string>()
+        const customerCodeMap = new Map<string, string>()
         for (const h of headers) {
-            partyMap.set(h.BillingDocument as string, String(h.SoldToParty || ''))
+            customerCodeMap.set(h.BillingDocument as string, String(h.SoldToParty || ''))
         }
+
+        const customerNames = await this.resolveCustomerNames([...customerCodeMap.values()])
 
         return bdItems
             .filter(item => validDocs.has(item.BillingDocument as string))
-            .map(item => ({
-                lineItem: String(item.BillingDocumentItem),
-                documentNumber: String(item.BillingDocument),
-                materialCode: String(item.Material || ''),
-                materialDescription: String(item.BillingDocumentItemText || ''),
-                partyName: partyMap.get(item.BillingDocument as string) || '',
-                orderQuantity: Number(item.BillingQuantity) || null,
-                openQuantity: null,
-                purchaseOrder: null,
-                unitOfMeasurement: String(item.BillingQuantityUnit || '') || null
-            }))
+            .map(item => {
+                const customerCode = customerCodeMap.get(item.BillingDocument as string) || ''
+                return {
+                    lineItem: String(item.BillingDocumentItem),
+                    documentNumber: String(item.BillingDocument),
+                    materialCode: String(item.Material || ''),
+                    materialDescription: String(item.BillingDocumentItemText || ''),
+                    partyName: customerNames.get(customerCode) || customerCode,
+                    orderQuantity: Number(item.BillingQuantity) || null,
+                    openQuantity: null,
+                    purchaseOrder: null,
+                    unitOfMeasurement: String(item.BillingQuantityUnit || '') || null
+                }
+            })
     }
 
     private async fetchMaterialDocItems(docNumbers: string[]): Promise<NormalizedItem[]> {
@@ -752,17 +796,23 @@ export default class GatepassService extends cds.ApplicationService {
                 })
         ) as Record<string, unknown>[]
 
-        return matItems.map(item => ({
-            lineItem: String(item.MaterialDocumentItem),
-            documentNumber: String(item.MaterialDocument),
-            materialCode: String(item.Material || ''),
-            materialDescription: String(item.MaterialDocumentItemText || ''),
-            partyName: String(item.Supplier || ''),
-            orderQuantity: Number(item.QuantityInBaseUnit) || null,
-            openQuantity: null,
-            purchaseOrder: String(item.PurchaseOrder || '') || null,
-            unitOfMeasurement: String(item.MaterialBaseUnit || '') || null
-        }))
+        const supplierCodes = matItems.map(item => String(item.Supplier || '')).filter(Boolean)
+        const supplierNames = await this.resolveSupplierNames(supplierCodes)
+
+        return matItems.map(item => {
+            const supplierCode = String(item.Supplier || '')
+            return {
+                lineItem: String(item.MaterialDocumentItem),
+                documentNumber: String(item.MaterialDocument),
+                materialCode: String(item.Material || ''),
+                materialDescription: String(item.MaterialDocumentItemText || ''),
+                partyName: supplierNames.get(supplierCode) || supplierCode,
+                orderQuantity: Number(item.QuantityInBaseUnit) || null,
+                openQuantity: null,
+                purchaseOrder: String(item.PurchaseOrder || '') || null,
+                unitOfMeasurement: String(item.MaterialBaseUnit || '') || null
+            }
+        })
     }
 
     private async fetchGatepassItems(passNumbers: string[], quantityField: 'receivedQuantity' | 'issueQuantity'): Promise<NormalizedItem[]> {
