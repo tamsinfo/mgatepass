@@ -243,6 +243,7 @@ export default class AppController extends BaseController {
 		if (!oBinding) return;
 
 		const aFilters: Filter[] = [];
+		aFilters.push(new Filter("status", FilterOperator.EQ, "Draft"));
 
 		const oDateRange = this.byId("dateFilter") as DateRangeSelection;
 		const dFrom = oDateRange?.getDateValue();
@@ -264,7 +265,7 @@ export default class AppController extends BaseController {
 			aFilters.push(new Filter("passNumber", FilterOperator.Contains, sPassNumber));
 		}
 
-		oBinding.filter(aFilters.length ? aFilters : []);
+		oBinding.filter(aFilters);
 	}
 
 	public onSearch(): void {
