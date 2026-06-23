@@ -75,7 +75,7 @@
 									<Text text="{createdBy}"/>
 									<Text text="{processType}"/>
 									<Text text="{ path: 'gatepassType', formatter: 'formatter.formatGatepassType' }"/>
-									<Text text="{ path: 'documents', formatter: 'formatter.formatDocuments' }"/>
+									<Text text="{ path: 'documents', targetType: 'any', formatter: 'formatter.formatDocuments' }"/>
 									<Button
 										icon="sap-icon://print"
 										type="Transparent"
