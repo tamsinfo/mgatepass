@@ -6,7 +6,7 @@ import type { Pass } from '#cds-models/GatepassService'
 const templateSource = readFileSync(resolve(__dirname, 'templates/print-slip.hbs'), 'utf-8')
 
 Handlebars.registerHelper('val', (v: unknown) => {
-    if (v == null || v === '') return '—'
+    if (v == null || v === '') return 'N/A'
     return String(v)
 })
 
@@ -48,12 +48,12 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 function fmtWeight(w: number | null | undefined): string {
-    if (w == null) return '—'
+    if (w == null) return 'N/A'
     return Number(w).toLocaleString('en-IN', { minimumFractionDigits: 3, maximumFractionDigits: 3 })
 }
 
 function fmtDateTime(d: string | null | undefined): string {
-    if (!d) return '—'
+    if (!d) return 'N/A'
     try {
         return new Date(d).toLocaleString('en-IN', {
             day: '2-digit', month: 'short', year: 'numeric',
@@ -65,7 +65,7 @@ function fmtDateTime(d: string | null | undefined): string {
 }
 
 function fmtDate(d: string | null | undefined): string {
-    if (!d) return ''
+    if (!d) return 'N/A'
     try {
         return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
     } catch {
