@@ -57,6 +57,8 @@ interface DialogFormData {
 	gatepassType: string;
 	gatepassTypeOptions: GatepassTypeOption[];
 	showDocuments: boolean;
+	documentSectionTitle: string;
+	documentInputLabel: string;
 	documents: string[];
 	weighbridgeEnabled: boolean;
 	weighbridgeRequired: boolean;
@@ -303,8 +305,8 @@ export default class AppController extends BaseController {
 		return all;
 	}
 
-	private isReturnDateRequired(processType: string, gatepassType: string): boolean {
-		return processType === "Outward" && (gatepassType === "Returnable" || gatepassType === "NonReturnable");
+	private isReturnDateRequired(_processType: string, gatepassType: string): boolean {
+		return gatepassType === "Returnable";
 	}
 
 	private needsDocuments(processType: string, gatepassType: string): boolean {
@@ -321,6 +323,8 @@ export default class AppController extends BaseController {
 			gatepassType: "",
 			gatepassTypeOptions: this.getGatepassTypeOptions(""),
 			showDocuments: true,
+			documentSectionTitle: this.getResourceText("sectionDocuments"),
+			documentInputLabel: this.getResourceText("documentNumberInput"),
 			documents: [],
 			weighbridgeEnabled: this._weighbridgeEnabled,
 			weighbridgeRequired: false,
@@ -378,6 +382,9 @@ export default class AppController extends BaseController {
 		formData.showDocuments = this.needsDocuments(formData.processType, formData.gatepassType);
 		formData.showReturnDate = formData.gatepassType === "Returnable" || this.isReturnDateRequired(formData.processType, formData.gatepassType);
 		formData.returnDateRequired = this.isReturnDateRequired(formData.processType, formData.gatepassType);
+		const isAgainstRGP = formData.gatepassType === "AgainstOutwardRGP" || formData.gatepassType === "AgainstInwardRGP";
+		formData.documentSectionTitle = this.getResourceText(isAgainstRGP ? "sectionGatepasses" : "sectionDocuments");
+		formData.documentInputLabel = this.getResourceText(isAgainstRGP ? "gatepassNumberInput" : "documentNumberInput");
 		formData.showCarrierSection = true;
 		formData.entryGate = (oContext.getProperty("entryGate_ID") as string) ?? "";
 
@@ -484,6 +491,9 @@ export default class AppController extends BaseController {
 			model.setProperty("/showReturnDate", showReturn);
 			model.setProperty("/returnDateRequired", this.isReturnDateRequired(processType, gatepassType));
 			model.setProperty("/showDocuments", this.needsDocuments(processType, gatepassType));
+			const isAgainstRGP = gatepassType === "AgainstOutwardRGP" || gatepassType === "AgainstInwardRGP";
+			model.setProperty("/documentSectionTitle", this.getResourceText(isAgainstRGP ? "sectionGatepasses" : "sectionDocuments"));
+			model.setProperty("/documentInputLabel", this.getResourceText(isAgainstRGP ? "gatepassNumberInput" : "documentNumberInput"));
 			this.updateApprovalRequired(model);
 		});
 	}
