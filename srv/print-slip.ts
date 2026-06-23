@@ -127,7 +127,7 @@ export function buildPrintSlipHtml(data: PrintData): string {
         createdAt: fmtDateTime(p.createdAt as string),
         processType: pass.processType,
         gatepassTypeLabel: GATEPASS_TYPE_LABELS[pass.gatepassType!] ?? pass.gatepassType,
-        documentType: pass.documentType,
+        documentType: pass.processType === 'Outward' && pass.gatepassType === 'Returnable' ? 'Challan' : pass.documentType,
         weighbridgeRequired: pass.weighbridgeRequired,
         documents: documentsStr,
         expectedReturnDate: fmtDate(p.expectedReturnDate as string),
