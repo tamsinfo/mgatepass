@@ -61,6 +61,28 @@ export default class GatepassService extends cds.ApplicationService {
                 .map((d: string) => d?.trim())
                 .filter(Boolean)
 
+            if (docTypeKey === 'Inward_AgainstOutwardRGP' || docTypeKey === 'Outward_AgainstInwardRGP') {
+                const expectedPT = docTypeKey === 'Inward_AgainstOutwardRGP' ? 'Outward' : 'Inward'
+                const { Passes: PassesEntity } = this.entities
+                const refPasses = await SELECT.from(PassesEntity)
+                    .columns('passNumber', 'status', 'processType', 'gatepassType')
+                    .where({ passNumber: { in: sanitizedDocs } }) as { passNumber: string; status: string; processType: string; gatepassType: string }[]
+
+                const missing = sanitizedDocs.filter(pn => !refPasses.some(p => p.passNumber === pn))
+                if (missing.length) {
+                    return req.error(404, `Gatepass not found: ${missing.join(', ')}`)
+                }
+
+                for (const p of refPasses) {
+                    if (p.processType !== expectedPT || p.gatepassType !== 'Returnable') {
+                        return req.error(400, `Gatepass ${p.passNumber} is ${p.processType}/${p.gatepassType}, expected ${expectedPT}/Returnable`)
+                    }
+                    if (p.status !== 'Completed' && p.status !== 'PartiallyReturned') {
+                        return req.error(400, `Gatepass ${p.passNumber} has status '${p.status}', only Completed or Partially Returned gatepasses can be referenced`)
+                    }
+                }
+            }
+
             const passNumber = await this.generatePassNumber(processType)
 
             let vehicleId: string | null = null
@@ -436,9 +458,9 @@ export default class GatepassService extends cds.ApplicationService {
                 case 'Outward_Returnable':
                     return this.fetchBillingDocItems(docNumbers, 'JSN')
                 case 'Inward_AgainstOutwardRGP':
-                    return this.fetchGatepassItems(docNumbers, 'receivedQuantity')
+                    return this.fetchGatepassItems(req, docNumbers, 'receivedQuantity', 'Outward', 'Returnable')
                 case 'Outward_AgainstInwardRGP':
-                    return this.fetchGatepassItems(docNumbers, 'issueQuantity')
+                    return this.fetchGatepassItems(req, docNumbers, 'issueQuantity', 'Inward', 'Returnable')
                 default:
                     return req.error(400, `Unsupported combination: ${processType} + ${gatepassType}`)
             }
@@ -815,14 +837,34 @@ export default class GatepassService extends cds.ApplicationService {
         })
     }
 
-    private async fetchGatepassItems(passNumbers: string[], quantityField: 'receivedQuantity' | 'issueQuantity'): Promise<NormalizedItem[]> {
+    private async fetchGatepassItems(
+        req: cds.Request,
+        passNumbers: string[],
+        quantityField: 'receivedQuantity' | 'issueQuantity',
+        expectedProcessType: string,
+        expectedGatepassType: string
+    ): Promise<NormalizedItem[] | Error | undefined> {
         const { Passes, GatepassItems } = this.entities
 
-        const validStatuses = ['Completed', 'PartiallyReturned']
-        const passes = await SELECT.from(Passes)
-            .columns('ID', 'passNumber', 'status')
-            .where({ passNumber: { in: passNumbers }, status: { in: validStatuses } }) as { ID: string; passNumber: string; status: string }[]
+        const allPasses = await SELECT.from(Passes)
+            .columns('ID', 'passNumber', 'status', 'processType', 'gatepassType')
+            .where({ passNumber: { in: passNumbers } }) as { ID: string; passNumber: string; status: string; processType: string; gatepassType: string }[]
 
+        for (const p of allPasses) {
+            if (p.processType !== expectedProcessType || p.gatepassType !== expectedGatepassType) {
+                return req.error(400, `Gatepass ${p.passNumber} is ${p.processType}/${p.gatepassType}, expected ${expectedProcessType}/${expectedGatepassType}`)
+            }
+            if (p.status !== 'Completed' && p.status !== 'PartiallyReturned') {
+                return req.error(400, `Gatepass ${p.passNumber} has status '${p.status}', only Completed or Partially Returned gatepasses can be referenced`)
+            }
+        }
+
+        const missing = passNumbers.filter(pn => !allPasses.some(p => p.passNumber === pn))
+        if (missing.length) {
+            return req.error(404, `Gatepass not found: ${missing.join(', ')}`)
+        }
+
+        const passes = allPasses
         if (!passes.length) return []
         const passIds = passes.map(p => p.ID)
 
