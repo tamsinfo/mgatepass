@@ -1,7 +1,9 @@
 import Filter from "sap/ui/model/Filter";
 import FilterOperator from "sap/ui/model/FilterOperator";
+import MessageBox from "sap/m/MessageBox";
 import type Table from "sap/m/Table";
 import type IconTabBar from "sap/m/IconTabBar";
+import type Button from "sap/m/Button";
 import type ODataListBinding from "sap/ui/model/odata/v4/ODataListBinding";
 import type ODataModel from "sap/ui/model/odata/v4/ODataModel";
 import JSONModel from "sap/ui/model/json/JSONModel";
@@ -56,6 +58,32 @@ export default class AppController extends BaseController {
 		} else {
 			oBinding.filter([new Filter("status", FilterOperator.EQ, sKey)]);
 		}
+	}
+
+	public async onPrint(oEvent: { getSource: () => Button }): Promise<void> {
+		const oButton = oEvent.getSource();
+		const oContext = oButton.getBindingContext()!;
+		const oModel = this.getView()!.getModel() as ODataModel;
+
+		try {
+			const oAction = oModel.bindContext(`${oContext.getPath()}/GatepassService.printPass(...)`);
+			await oAction.execute();
+			const html = (oAction.getBoundContext().getObject() as Record<string, unknown>).value as string;
+			oAction.destroy();
+			const printWindow = window.open("", "_blank");
+			if (printWindow) {
+				printWindow.document.write(html);
+				printWindow.document.close();
+			}
+		} catch (err: unknown) {
+			MessageBox.error(this.extractErrorMessage(err));
+		}
+	}
+
+	private extractErrorMessage(err: unknown): string {
+		if (err instanceof Error) return err.message;
+		if (typeof err === "string") return err;
+		return "An unexpected error occurred";
 	}
 
 	private async loadTabCounts(): Promise<void> {
