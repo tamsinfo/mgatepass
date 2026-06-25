@@ -125,6 +125,7 @@ entity GatepassItems : cuid {
     openQuantity        : Decimal(13, 3);
     receivedQuantity    : Decimal(13, 3);
     issueQuantity       : Decimal(13, 3);
+    returnableQuantity  : Decimal(13, 3);
     purchaseOrder       : String(10);
     unitOfMeasurement   : String(3);
 }

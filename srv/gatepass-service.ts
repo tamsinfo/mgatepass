@@ -373,9 +373,23 @@ export default class GatepassService extends cds.ApplicationService {
             const gate = await SELECT.one.from(Gates).where({ ID: exitGate })
             if (!gate) return req.error(400, 'Invalid exit gate')
 
-            const { Passes } = this.entities
+            const { Passes, GatepassItems } = this.entities
             await UPDATE(Passes).set({ exitGate_ID: exitGate }).where({ ID: passId })
             await this.updatePassStatus(passId, 'Completed', 'ExitPerformed', pass.status, req.user.id, null)
+
+            if (pass.gatepassType === 'Returnable') {
+                const qtyField = pass.processType === 'Inward' ? 'receivedQuantity' : 'issueQuantity'
+                const items = await SELECT.from(GatepassItems).where({ pass_ID: passId }) as GatepassItem[]
+                for (const item of items) {
+                    const qty = Number(item[qtyField]) || Number(item.orderQuantity) || 0
+                    await UPDATE(GatepassItems).set({ returnableQuantity: qty }).where({ ID: item.ID })
+                }
+            }
+
+            if (pass.gatepassType === 'AgainstOutwardRGP' || pass.gatepassType === 'AgainstInwardRGP') {
+                await this.updateReferencePassReturns(pass, req.user.id)
+            }
+
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 
@@ -888,16 +902,59 @@ export default class GatepassService extends cds.ApplicationService {
 
         const refField = quantityField === 'receivedQuantity' ? 'issueQuantity' : 'receivedQuantity'
 
-        return items.map(item => ({
-            lineItem: item.lineItem || '',
-            documentNumber: item.documentNumber || '',
-            materialCode: item.materialCode || '',
-            materialDescription: item.materialDescription || '',
-            partyName: item.partyName || '',
-            orderQuantity: item[refField] ? Number(item[refField]) : (item.orderQuantity ? Number(item.orderQuantity) : null),
-            openQuantity: item.openQuantity ? Number(item.openQuantity) : null,
-            purchaseOrder: item.purchaseOrder || null,
-            unitOfMeasurement: item.unitOfMeasurement || null
-        }))
+        return items
+            .filter(item => !item.returnableQuantity || Number(item.returnableQuantity) > 0)
+            .map(item => ({
+                lineItem: item.lineItem || '',
+                documentNumber: item.documentNumber || '',
+                materialCode: item.materialCode || '',
+                materialDescription: item.materialDescription || '',
+                partyName: item.partyName || '',
+                orderQuantity: item.returnableQuantity ? Number(item.returnableQuantity) : (item[refField] ? Number(item[refField]) : (item.orderQuantity ? Number(item.orderQuantity) : null)),
+                openQuantity: item.openQuantity ? Number(item.openQuantity) : null,
+                purchaseOrder: item.purchaseOrder || null,
+                unitOfMeasurement: item.unitOfMeasurement || null
+            }))
+    }
+
+    private async updateReferencePassReturns(pass: Pass, userId: string): Promise<void> {
+        const { Passes, GatepassItems } = this.entities
+        const refPassNumbers = (pass.documents as string[]) || []
+        if (!refPassNumbers.length) return
+
+        const refPasses = await SELECT.from(Passes)
+            .columns('ID', 'passNumber', 'status')
+            .where({ passNumber: { in: refPassNumbers } }) as { ID: string; passNumber: string; status: PassStatus }[]
+
+        const currentItems = await SELECT.from(GatepassItems)
+            .where({ pass_ID: pass.ID }) as GatepassItem[]
+
+        const qtyField = pass.gatepassType === 'AgainstOutwardRGP' ? 'receivedQuantity' : 'issueQuantity'
+
+        for (const refPass of refPasses) {
+            const refItems = await SELECT.from(GatepassItems)
+                .where({ pass_ID: refPass.ID }) as GatepassItem[]
+
+            for (const refItem of refItems) {
+                const matching = currentItems.find(ci =>
+                    ci.materialCode === refItem.materialCode &&
+                    ci.documentNumber === refItem.documentNumber &&
+                    ci.lineItem === refItem.lineItem
+                )
+                if (!matching) continue
+
+                const returnedQty = Number(matching[qtyField]) || 0
+                const currentOpen = Number(refItem.returnableQuantity) || 0
+                const newOpen = Math.max(0, currentOpen - returnedQty)
+                await UPDATE(GatepassItems).set({ returnableQuantity: newOpen }).where({ ID: refItem.ID })
+            }
+
+            const updatedItems = await SELECT.from(GatepassItems)
+                .where({ pass_ID: refPass.ID }) as GatepassItem[]
+            const allReturned = updatedItems.every(i => !Number(i.returnableQuantity))
+            const newStatus: PassStatus = allReturned ? 'Returned' : 'PartiallyReturned'
+
+            await this.updatePassStatus(refPass.ID, newStatus, 'Updated', refPass.status, userId, null)
+        }
     }
 }
