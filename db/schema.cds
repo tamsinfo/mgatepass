@@ -21,7 +21,7 @@ type PassStatus : String enum {
 type DocumentType : String enum {
     PurchaseOrder;
     BillingDocument;
-    GoodsReceivedNote;
+    ManualEntry;
     Gatepass;
 };
 

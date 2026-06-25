@@ -21,7 +21,7 @@ interface NormalizedItem {
 const DOCUMENT_TYPE_MAP: Record<string, DocumentType> = {
     'Inward_NonReturnable': 'PurchaseOrder',
     'Outward_NonReturnable': 'BillingDocument',
-    'Inward_Returnable': 'GoodsReceivedNote',
+    'Inward_Returnable': 'ManualEntry',
     'Outward_Returnable': 'BillingDocument',
     'Inward_AgainstOutwardRGP': 'Gatepass',
     'Outward_AgainstInwardRGP': 'Gatepass'
@@ -49,6 +49,14 @@ export default class GatepassService extends cds.ApplicationService {
 
             if (!isInwardReturnable && !documents?.length) {
                 return req.error(400, 'At least one document number is required')
+            }
+
+            if (expectedReturnDate) {
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                if (new Date(expectedReturnDate) < today) {
+                    return req.error(400, 'Expected return date cannot be in the past')
+                }
             }
 
             const docTypeKey = `${processType}_${gatepassType}`
@@ -262,7 +270,7 @@ export default class GatepassService extends cds.ApplicationService {
 
             const { Passes, Weights } = this.entities
             await UPDATE(Weights).set({ entryWeight }).where({ ID: pass.weight_ID })
-            await this.updatePassStatus(passId, 'ExitWeightPending', 'WeightRecorded', pass.status, req.user.id, null)
+            await this.updatePassStatus(passId, 'ExitWeightPending', 'WeightRecorded', pass.status, req.user.id, 'Entry Weight')
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 
@@ -295,7 +303,7 @@ export default class GatepassService extends cds.ApplicationService {
             }
 
             await UPDATE(Weights).set({ exitWeight }).where({ ID: pass.weight_ID })
-            await this.updatePassStatus(passId, 'GateExitPending', 'WeightRecorded', pass.status, req.user.id, null)
+            await this.updatePassStatus(passId, 'GateExitPending', 'WeightRecorded', pass.status, req.user.id, 'Exit Weight')
             return SELECT.one.from(Passes).where({ ID: passId })
         })
 
@@ -492,6 +500,13 @@ export default class GatepassService extends cds.ApplicationService {
             }
 
             if (expectedReturnDate !== undefined) {
+                if (expectedReturnDate) {
+                    const today = new Date()
+                    today.setHours(0, 0, 0, 0)
+                    if (new Date(expectedReturnDate) < today) {
+                        return req.error(400, 'Expected return date cannot be in the past')
+                    }
+                }
                 updateData.expectedReturnDate = expectedReturnDate || null
             }
 

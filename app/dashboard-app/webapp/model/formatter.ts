@@ -15,7 +15,7 @@ const AUDIT_ACTION_LABELS: Record<string, string> = {
 const DOCUMENT_TYPE_LABELS: Record<string, string> = {
 	PurchaseOrder: "Purchase Order",
 	BillingDocument: "Billing Document",
-	GoodsReceivedNote: "Goods Received Note",
+	ManualEntry: "Manual Entry",
 	Gatepass: "Gatepass"
 };
 
