@@ -123,11 +123,6 @@ export default class AppController extends BaseController {
 	}
 
 	private async loadTabCounts(): Promise<void> {
-		const oModel = this.getView()!.getModel() as ODataModel;
-		if (!oModel) return;
-
-		await oModel.getMetaModel().requestObject("/");
-
 		const tabCounts = this.getView()!.getModel("tabCounts") as JSONModel;
 
 		const statuses = [
@@ -137,21 +132,14 @@ export default class AppController extends BaseController {
 		];
 
 		try {
-			const oListBinding = oModel.bindList("/Passes", undefined, undefined, undefined, {
-				$count: true
-			});
-			await oListBinding.requestContexts(0, 1);
-			const totalCount = oListBinding.getCount();
-			tabCounts.setProperty("/All", totalCount);
+			const base = "/odata/v4/gatepass/";
+			const allResp = await fetch(`${base}Passes/$count`);
+			tabCounts.setProperty("/All", parseInt(await allResp.text()) || 0);
 
-			for (const status of statuses) {
-				const oBinding = oModel.bindList("/Passes", undefined, undefined,
-					[new Filter("status", FilterOperator.EQ, status)],
-					{ $count: true }
-				);
-				await oBinding.requestContexts(0, 0);
-				tabCounts.setProperty(`/${status}`, oBinding.getCount());
-			}
+			await Promise.all(statuses.map(async (status) => {
+				const resp = await fetch(`${base}Passes/$count?$filter=status eq '${status}'`);
+				tabCounts.setProperty(`/${status}`, parseInt(await resp.text()) || 0);
+			}));
 		} catch {
 			// counts remain at 0
 		}
