@@ -9,6 +9,12 @@
 		<Page id="appPage" title="{i18n>appTitle}">
 			<headerContent>
 				<Button
+					text="{i18n>exportToExcel}"
+					icon="sap-icon://excel-attachment"
+					type="Transparent"
+					press=".onExportPress"
+				/>
+				<Button
 					icon="sap-icon://refresh"
 					type="Transparent"
 					press=".onRefreshTable"

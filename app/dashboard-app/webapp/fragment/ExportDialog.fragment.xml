@@ -1,0 +1,45 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core"
+>
+	<Dialog
+		id="exportDialog"
+		title="{i18n>exportTitle}"
+		type="Message"
+	>
+		<content>
+			<VBox class="sapUiSmallMargin">
+				<Label text="{i18n>exportMonth}" labelFor="exportMonthSelect"/>
+				<Select id="exportMonthSelect" selectedKey="{export>/month}" width="100%" class="sapUiSmallMarginBottom">
+					<core:Item key="01" text="{i18n>monthJan}"/>
+					<core:Item key="02" text="{i18n>monthFeb}"/>
+					<core:Item key="03" text="{i18n>monthMar}"/>
+					<core:Item key="04" text="{i18n>monthApr}"/>
+					<core:Item key="05" text="{i18n>monthMay}"/>
+					<core:Item key="06" text="{i18n>monthJun}"/>
+					<core:Item key="07" text="{i18n>monthJul}"/>
+					<core:Item key="08" text="{i18n>monthAug}"/>
+					<core:Item key="09" text="{i18n>monthSep}"/>
+					<core:Item key="10" text="{i18n>monthOct}"/>
+					<core:Item key="11" text="{i18n>monthNov}"/>
+					<core:Item key="12" text="{i18n>monthDec}"/>
+				</Select>
+				<Label text="{i18n>exportYear}" labelFor="exportYearSelect"/>
+				<Select id="exportYearSelect" selectedKey="{export>/year}" width="100%">
+					<items>
+						<core:Item key="2024" text="2024"/>
+						<core:Item key="2025" text="2025"/>
+						<core:Item key="2026" text="2026"/>
+						<core:Item key="2027" text="2027"/>
+					</items>
+				</Select>
+			</VBox>
+		</content>
+		<beginButton>
+			<Button text="{i18n>exportSubmit}" type="Emphasized" press=".onExportSubmit"/>
+		</beginButton>
+		<endButton>
+			<Button text="{i18n>cancel}" press=".onExportCancel"/>
+		</endButton>
+	</Dialog>
+</core:FragmentDefinition>
