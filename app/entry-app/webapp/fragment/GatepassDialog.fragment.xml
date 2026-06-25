@@ -90,6 +90,40 @@
 					</Table>
 				</Panel>
 
+				<Panel headerText="{i18n>sectionLineItems}" class="sapUiSmallMarginTop" visible="{= !${dialog>/showDocuments}}">
+					<headerToolbar>
+						<Toolbar>
+							<Title text="{i18n>sectionLineItems}"/>
+							<ToolbarSpacer/>
+							<Button icon="sap-icon://add" text="{i18n>addItem}" press=".onAddManualItem" type="Transparent"/>
+						</Toolbar>
+					</headerToolbar>
+					<Table
+						id="manualItemsTable"
+						items="{dialog>/items}"
+						noDataText="{i18n>noLineItems}"
+					>
+						<columns>
+							<Column><header><Text text="{i18n>colMaterialCode}"/></header></Column>
+							<Column><header><Text text="{i18n>colMaterialDesc}"/></header></Column>
+							<Column><header><Text text="{i18n>colPartyName}"/></header></Column>
+							<Column><header><Text text="{i18n>colReceivedQty}"/></header></Column>
+							<Column><header><Text text="{i18n>colUom}"/></header></Column>
+							<Column hAlign="Center" width="4rem"><header><Text text=""/></header></Column>
+						</columns>
+						<items>
+							<ColumnListItem>
+								<Input value="{dialog>materialCode}"/>
+								<Input value="{dialog>materialDescription}"/>
+								<Input value="{dialog>partyName}"/>
+								<Input value="{dialog>receivedQuantity}" type="Number"/>
+								<Input value="{dialog>unitOfMeasurement}" width="5rem"/>
+								<Button icon="sap-icon://delete" type="Transparent" press=".onRemoveManualItem"/>
+							</ColumnListItem>
+						</items>
+					</Table>
+				</Panel>
+
 				<form:SimpleForm
 					id="carrierSection"
 					editable="true"

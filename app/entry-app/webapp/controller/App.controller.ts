@@ -506,6 +506,37 @@ export default class AppController extends BaseController {
 		dialogModel.setProperty("/approvalRequired", required);
 	}
 
+	public async onAddManualItem(): Promise<void> {
+		const oDialog = await this.getDialog();
+		const model = oDialog.getModel("dialog") as JSONModel;
+		const items = (model.getProperty("/items") as ItemData[]) || [];
+		items.push({
+			lineItem: "",
+			documentNumber: "",
+			materialCode: "",
+			materialDescription: "",
+			partyName: "",
+			orderQuantity: null,
+			openQuantity: null,
+			receivedQuantity: null,
+			issueQuantity: null,
+			purchaseOrder: null,
+			unitOfMeasurement: null
+		});
+		model.setProperty("/items", items);
+	}
+
+	public onRemoveManualItem(oEvent: { getSource: () => Button }): void {
+		const oItem = oEvent.getSource().getParent() as ColumnListItem;
+		const sPath = oItem.getBindingContext("dialog")!.getPath();
+		const idx = parseInt(sPath.split("/").pop()!);
+		const oDialog = (this.byId("gatepassDialog") as Dialog);
+		const model = oDialog.getModel("dialog") as JSONModel;
+		const items = model.getProperty("/items") as ItemData[];
+		items.splice(idx, 1);
+		model.setProperty("/items", items);
+	}
+
 	public onAddDocument(): void {
 		const oInput = this.byId("documentNumberInput") as MultiInput;
 		const sValue = oInput.getValue()?.trim();
