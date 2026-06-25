@@ -129,12 +129,12 @@
 				<Panel headerText="{i18n>sectionLineItems}" class="sapUiMediumMarginTop">
 					<Table items="{items}" noDataText="{i18n>noLineItems}">
 						<columns>
-							<Column><Text text="{i18n>colDocNumber}"/></Column>
-							<Column><Text text="{i18n>colLineItem}"/></Column>
+							<Column visible="{= %{documentType} !== 'ManualEntry' }"><Text text="{i18n>colDocNumber}"/></Column>
+							<Column visible="{= %{documentType} !== 'ManualEntry' }"><Text text="{i18n>colLineItem}"/></Column>
 							<Column><Text text="{i18n>colMaterialCode}"/></Column>
 							<Column><Text text="{i18n>colMaterialDesc}"/></Column>
 							<Column><Text text="{i18n>colPartyName}"/></Column>
-							<Column hAlign="End" visible="{= %{gatepassType} !== 'AgainstOutwardRGP' &amp;&amp; %{gatepassType} !== 'AgainstInwardRGP' }"><Text text="{i18n>colOrderQty}"/></Column>
+							<Column hAlign="End" visible="{= %{gatepassType} !== 'AgainstOutwardRGP' &amp;&amp; %{gatepassType} !== 'AgainstInwardRGP' &amp;&amp; %{documentType} !== 'ManualEntry' }"><Text text="{i18n>colOrderQty}"/></Column>
 							<Column hAlign="End" visible="{= %{processType} === 'Inward' }"><Text text="{i18n>colReceivedQty}"/></Column>
 							<Column hAlign="End" visible="{= %{processType} === 'Outward' }"><Text text="{i18n>colIssueQty}"/></Column>
 							<Column><Text text="{i18n>colUom}"/></Column>
