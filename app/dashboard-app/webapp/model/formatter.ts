@@ -39,6 +39,27 @@ export default {
 		return STATUS_LABELS[value] ?? value ?? "";
 	},
 
+	formatReturnDelay(gatepassType: string, expectedReturnDate: string): string {
+		if (gatepassType !== "Returnable") return "";
+		if (!expectedReturnDate) return "";
+		const expected = new Date(expectedReturnDate);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		expected.setHours(0, 0, 0, 0);
+		const diffMs = today.getTime() - expected.getTime();
+		const days = Math.max(0, Math.floor(diffMs / 86400000));
+		return `${days} day${days !== 1 ? "s" : ""}`;
+	},
+
+	formatReturnDelayState(gatepassType: string, expectedReturnDate: string): string {
+		if (gatepassType !== "Returnable" || !expectedReturnDate) return "None";
+		const expected = new Date(expectedReturnDate);
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		expected.setHours(0, 0, 0, 0);
+		return today > expected ? "Error" : "None";
+	},
+
 	formatDocuments(aDocuments: unknown): string {
 		if (!aDocuments) return "";
 		if (typeof aDocuments === "string") return aDocuments;

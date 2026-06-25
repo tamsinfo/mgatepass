@@ -63,6 +63,9 @@
 								<Column>
 									<Text text="{i18n>documentNumber}"/>
 								</Column>
+								<Column>
+									<Text text="{i18n>returnDelayedBy}"/>
+								</Column>
 								<Column hAlign="Center" width="5rem">
 									<Text text="{i18n>actions}"/>
 								</Column>
@@ -76,6 +79,10 @@
 									<Text text="{processType}"/>
 									<Text text="{ path: 'gatepassType', formatter: 'formatter.formatGatepassType' }"/>
 									<Text text="{ path: 'documents', targetType: 'any', formatter: 'formatter.formatDocuments' }"/>
+									<ObjectStatus
+										text="{ parts: ['gatepassType', 'expectedReturnDate'], formatter: 'formatter.formatReturnDelay' }"
+										state="{ parts: ['gatepassType', 'expectedReturnDate'], formatter: 'formatter.formatReturnDelayState' }"
+									/>
 									<Button
 										icon="sap-icon://print"
 										type="Transparent"
