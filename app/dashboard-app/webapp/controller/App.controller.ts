@@ -1,9 +1,12 @@
 import Filter from "sap/ui/model/Filter";
 import FilterOperator from "sap/ui/model/FilterOperator";
 import MessageBox from "sap/m/MessageBox";
+import Fragment from "sap/ui/core/Fragment";
 import type Table from "sap/m/Table";
+import type Dialog from "sap/m/Dialog";
 import type IconTabBar from "sap/m/IconTabBar";
 import type Button from "sap/m/Button";
+import type ColumnListItem from "sap/m/ColumnListItem";
 import type ODataListBinding from "sap/ui/model/odata/v4/ODataListBinding";
 import type ODataModel from "sap/ui/model/odata/v4/ODataModel";
 import JSONModel from "sap/ui/model/json/JSONModel";
@@ -14,6 +17,8 @@ import BaseController from "mgatepass/dashboard/controller/BaseController";
  * @namespace mgatepass.dashboard.controller
  */
 export default class AppController extends BaseController {
+
+	private _pDetailDialog: Promise<Dialog> | null = null;
 
 	public override onInit(): void {
 		this.initResourceBundle();
@@ -60,6 +65,37 @@ export default class AppController extends BaseController {
 		}
 	}
 
+	public async onRowPress(oEvent: { getSource: () => ColumnListItem }): Promise<void> {
+		const oItem = oEvent.getSource();
+		const sPath = oItem.getBindingContext()!.getPath();
+
+		if (!this._pDetailDialog) {
+			this._pDetailDialog = Fragment.load({
+				id: this.getView()!.getId(),
+				name: "mgatepass.dashboard.fragment.GatepassDetail",
+				controller: this
+			}).then((oDialog) => {
+				const dialog = oDialog as Dialog;
+				this.getView()!.addDependent(dialog);
+				return dialog;
+			});
+		}
+
+		const oDialog = await this._pDetailDialog;
+		oDialog.bindElement({
+			path: sPath,
+			parameters: {
+				$expand: "items,auditLog,vehicle($expand=type),driver,weight,entryGate,exitGate"
+			}
+		});
+		oDialog.open();
+	}
+
+	public onCloseDetailDialog(): void {
+		const oDialog = this.byId("detailDialog") as Dialog;
+		oDialog.close();
+	}
+
 	public async onPrint(oEvent: { getSource: () => Button }): Promise<void> {
 		const oButton = oEvent.getSource();
 		const oContext = oButton.getBindingContext()!;
@@ -88,6 +124,10 @@ export default class AppController extends BaseController {
 
 	private async loadTabCounts(): Promise<void> {
 		const oModel = this.getView()!.getModel() as ODataModel;
+		if (!oModel) return;
+
+		await oModel.getMetaModel().requestObject("/");
+
 		const tabCounts = this.getView()!.getModel("tabCounts") as JSONModel;
 
 		const statuses = [
@@ -100,7 +140,7 @@ export default class AppController extends BaseController {
 			const oListBinding = oModel.bindList("/Passes", undefined, undefined, undefined, {
 				$count: true
 			});
-			await oListBinding.requestContexts(0, 0);
+			await oListBinding.requestContexts(0, 1);
 			const totalCount = oListBinding.getCount();
 			tabCounts.setProperty("/All", totalCount);
 

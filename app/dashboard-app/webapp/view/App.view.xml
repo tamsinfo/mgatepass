@@ -71,7 +71,7 @@
 								</Column>
 							</columns>
 							<items>
-								<ColumnListItem>
+								<ColumnListItem type="Navigation" press=".onRowPress">
 									<Text text="{passNumber}"/>
 									<Text text="{ path: 'status', formatter: 'formatter.formatStatus' }"/>
 									<Text text="{ path: 'createdAt', formatter: 'formatter.formatDateTime' }"/>

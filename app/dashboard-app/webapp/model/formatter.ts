@@ -1,3 +1,24 @@
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+	Created: "Created",
+	SentForApproval: "Sent for Approval",
+	Approved: "Approved",
+	Rejected: "Rejected",
+	Cancelled: "Cancelled",
+	WeightRecorded: "Weight Recorded",
+	EntryPerformed: "Entry Performed",
+	ExitPerformed: "Exit Performed",
+	Updated: "Updated",
+	Finalised: "Finalised",
+	Printed: "Printed"
+};
+
+const DOCUMENT_TYPE_LABELS: Record<string, string> = {
+	PurchaseOrder: "Purchase Order",
+	BillingDocument: "Billing Document",
+	GoodsReceivedNote: "Goods Received Note",
+	Gatepass: "Gatepass"
+};
+
 const GATEPASS_TYPE_LABELS: Record<string, string> = {
 	Returnable: "Returnable",
 	NonReturnable: "Non-Returnable",
@@ -19,8 +40,13 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default {
+	formatValue(value: unknown): string {
+		if (value == null || value === "") return "N/A";
+		return String(value);
+	},
+
 	formatDateTime(value: string): string {
-		if (!value) return "";
+		if (!value) return "N/A";
 		try {
 			return new Date(value).toLocaleString("en-IN", {
 				day: "2-digit", month: "short", year: "numeric",
@@ -60,8 +86,36 @@ export default {
 		return today > expected ? "Error" : "None";
 	},
 
+	formatAuditAction(value: string): string {
+		return AUDIT_ACTION_LABELS[value] ?? value ?? "N/A";
+	},
+
+	formatDocumentType(value: string): string {
+		return DOCUMENT_TYPE_LABELS[value] ?? value ?? "N/A";
+	},
+
+	formatYesNo(value: boolean): string {
+		return value ? "Yes" : "No";
+	},
+
+	formatDate(value: string): string {
+		if (!value) return "N/A";
+		try {
+			return new Date(value).toLocaleDateString("en-IN", {
+				day: "2-digit", month: "short", year: "numeric"
+			});
+		} catch {
+			return value;
+		}
+	},
+
+	formatWeight(value: unknown): string {
+		if (value == null) return "N/A";
+		return Number(value).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+	},
+
 	formatDocuments(aDocuments: unknown): string {
-		if (!aDocuments) return "";
+		if (!aDocuments) return "N/A";
 		if (typeof aDocuments === "string") return aDocuments;
 		if (Array.isArray(aDocuments)) {
 			return aDocuments

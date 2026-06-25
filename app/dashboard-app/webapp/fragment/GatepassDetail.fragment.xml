@@ -1,0 +1,185 @@
+<core:FragmentDefinition
+	xmlns="sap.m"
+	xmlns:core="sap.ui.core"
+	core:require="{ formatter: 'mgatepass/dashboard/model/formatter' }"
+>
+	<Dialog
+		id="detailDialog"
+		title="{i18n>detailTitle}"
+		contentWidth="70rem"
+		verticalScrolling="true"
+	>
+		<content>
+			<VBox class="sapUiMediumMargin">
+				<Title text="{i18n>sectionGeneralDetails}" level="H5" class="sapUiSmallMarginBottom"/>
+				<HBox class="sapUiSmallMarginBottom">
+					<VBox width="25%">
+						<Label text="{i18n>passNumber}" design="Bold"/>
+						<Text text="{passNumber}"/>
+					</VBox>
+					<VBox width="25%">
+						<Label text="{i18n>status}" design="Bold"/>
+						<Text text="{ path: 'status', formatter: 'formatter.formatStatus' }"/>
+					</VBox>
+					<VBox width="25%">
+						<Label text="{i18n>processType}" design="Bold"/>
+						<Text text="{processType}"/>
+					</VBox>
+					<VBox width="25%">
+						<Label text="{i18n>gatepassType}" design="Bold"/>
+						<Text text="{ path: 'gatepassType', formatter: 'formatter.formatGatepassType' }"/>
+					</VBox>
+				</HBox>
+				<HBox class="sapUiSmallMarginBottom">
+					<VBox width="25%">
+						<Label text="{i18n>documentType}" design="Bold"/>
+						<Text text="{ path: 'documentType', formatter: 'formatter.formatDocumentType' }"/>
+					</VBox>
+					<VBox width="25%">
+						<Label text="{i18n>documentNumber}" design="Bold"/>
+						<Text text="{ path: 'documents', targetType: 'any', formatter: 'formatter.formatDocuments' }"/>
+					</VBox>
+					<VBox width="25%">
+						<Label text="{i18n>weighbridgeApplicable}" design="Bold"/>
+						<Text text="{ path: 'weighbridgeRequired', formatter: 'formatter.formatYesNo' }"/>
+					</VBox>
+					<VBox width="25%">
+						<Label text="{i18n>expectedReturnDate}" design="Bold"/>
+						<Text text="{ path: 'expectedReturnDate', formatter: 'formatter.formatDate' }"/>
+					</VBox>
+				</HBox>
+				<HBox class="sapUiSmallMarginBottom">
+					<VBox width="25%">
+						<Label text="{i18n>createdBy}" design="Bold"/>
+						<Text text="{createdBy}"/>
+					</VBox>
+					<VBox width="25%">
+						<Label text="{i18n>createdAt}" design="Bold"/>
+						<Text text="{ path: 'createdAt', formatter: 'formatter.formatDateTime' }"/>
+					</VBox>
+					<VBox width="25%">
+						<Label text="{i18n>approvedBy}" design="Bold"/>
+						<Text text="{ path: 'approvedBy', formatter: 'formatter.formatValue' }"/>
+					</VBox>
+					<VBox width="25%">
+						<Label text="{i18n>approvedAt}" design="Bold"/>
+						<Text text="{ path: 'approvedAt', formatter: 'formatter.formatDateTime' }"/>
+					</VBox>
+				</HBox>
+
+				<HBox class="sapUiMediumMarginTop">
+					<VBox width="50%" class="sapUiSmallMarginEnd">
+						<Title text="{i18n>sectionCarrierDetails}" level="H5" class="sapUiSmallMarginBottom"/>
+						<HBox class="sapUiSmallMarginBottom">
+							<VBox width="50%">
+								<Label text="{i18n>vehicleType}" design="Bold"/>
+								<Text text="{ path: 'vehicle/type/name', formatter: 'formatter.formatValue' }"/>
+							</VBox>
+							<VBox width="50%">
+								<Label text="{i18n>vehicleNumber}" design="Bold"/>
+								<Text text="{ path: 'vehicle/vehicleNumber', formatter: 'formatter.formatValue' }"/>
+							</VBox>
+						</HBox>
+						<HBox class="sapUiSmallMarginBottom">
+							<VBox width="50%">
+								<Label text="{i18n>transporterName}" design="Bold"/>
+								<Text text="{ path: 'vehicle/transporter', formatter: 'formatter.formatValue' }"/>
+							</VBox>
+							<VBox width="50%">
+								<Label text="{i18n>driverName}" design="Bold"/>
+								<Text text="{ path: 'driver/name', formatter: 'formatter.formatValue' }"/>
+							</VBox>
+						</HBox>
+						<HBox>
+							<VBox width="50%">
+								<Label text="{i18n>driverLicense}" design="Bold"/>
+								<Text text="{ path: 'driver/licenseNumber', formatter: 'formatter.formatValue' }"/>
+							</VBox>
+							<VBox width="50%">
+								<Label text="{i18n>driverContact}" design="Bold"/>
+								<Text text="{ path: 'driver/contactNumber', formatter: 'formatter.formatValue' }"/>
+							</VBox>
+						</HBox>
+					</VBox>
+					<VBox width="50%">
+						<Title text="{i18n>sectionGateWeight}" level="H5" class="sapUiSmallMarginBottom"/>
+						<HBox class="sapUiSmallMarginBottom">
+							<VBox width="50%">
+								<Label text="{i18n>entryGate}" design="Bold"/>
+								<Text text="{ path: 'entryGate/name', formatter: 'formatter.formatValue' }"/>
+							</VBox>
+							<VBox width="50%">
+								<Label text="{i18n>exitGate}" design="Bold"/>
+								<Text text="{ path: 'exitGate/name', formatter: 'formatter.formatValue' }"/>
+							</VBox>
+						</HBox>
+						<HBox>
+							<VBox width="50%">
+								<Label text="{i18n>entryWeight}" design="Bold"/>
+								<Text text="{ path: 'weight/entryWeight', formatter: 'formatter.formatWeight' }"/>
+							</VBox>
+							<VBox width="50%">
+								<Label text="{i18n>exitWeight}" design="Bold"/>
+								<Text text="{ path: 'weight/exitWeight', formatter: 'formatter.formatWeight' }"/>
+							</VBox>
+						</HBox>
+					</VBox>
+				</HBox>
+
+				<Panel headerText="{i18n>sectionLineItems}" class="sapUiMediumMarginTop">
+					<Table items="{items}" noDataText="{i18n>noLineItems}">
+						<columns>
+							<Column><Text text="{i18n>colDocNumber}"/></Column>
+							<Column><Text text="{i18n>colLineItem}"/></Column>
+							<Column><Text text="{i18n>colMaterialCode}"/></Column>
+							<Column><Text text="{i18n>colMaterialDesc}"/></Column>
+							<Column><Text text="{i18n>colPartyName}"/></Column>
+							<Column hAlign="End" visible="{= %{gatepassType} !== 'AgainstOutwardRGP' &amp;&amp; %{gatepassType} !== 'AgainstInwardRGP' }"><Text text="{i18n>colOrderQty}"/></Column>
+							<Column hAlign="End" visible="{= %{processType} === 'Inward' }"><Text text="{i18n>colReceivedQty}"/></Column>
+							<Column hAlign="End" visible="{= %{processType} === 'Outward' }"><Text text="{i18n>colIssueQty}"/></Column>
+							<Column><Text text="{i18n>colUom}"/></Column>
+						</columns>
+						<items>
+							<ColumnListItem>
+								<Text text="{documentNumber}"/>
+								<Text text="{lineItem}"/>
+								<Text text="{materialCode}"/>
+								<Text text="{materialDescription}"/>
+								<Text text="{partyName}"/>
+								<Text text="{orderQuantity}"/>
+								<Text text="{receivedQuantity}"/>
+								<Text text="{issueQuantity}"/>
+								<Text text="{unitOfMeasurement}"/>
+							</ColumnListItem>
+						</items>
+					</Table>
+				</Panel>
+
+				<Panel headerText="{i18n>sectionAuditLog}" class="sapUiSmallMarginTop">
+					<Table
+						items="{ path: 'auditLog', sorter: { path: 'performedAt', descending: true } }"
+						noDataText="{i18n>noAuditEntries}"
+					>
+						<columns>
+							<Column><Text text="{i18n>colAction}"/></Column>
+							<Column><Text text="{i18n>colPerformedBy}"/></Column>
+							<Column><Text text="{i18n>colPerformedAt}"/></Column>
+							<Column><Text text="{i18n>colRemarks}"/></Column>
+						</columns>
+						<items>
+							<ColumnListItem>
+								<Text text="{ path: 'action', formatter: 'formatter.formatAuditAction' }"/>
+								<Text text="{performedBy}"/>
+								<Text text="{ path: 'performedAt', formatter: 'formatter.formatDateTime' }"/>
+								<Text text="{ path: 'remarks', formatter: 'formatter.formatValue' }"/>
+							</ColumnListItem>
+						</items>
+					</Table>
+				</Panel>
+			</VBox>
+		</content>
+		<buttons>
+			<Button text="{i18n>close}" press=".onCloseDetailDialog"/>
+		</buttons>
+	</Dialog>
+</core:FragmentDefinition>
