@@ -94,10 +94,6 @@ export default {
 		return DOCUMENT_TYPE_LABELS[value] ?? value ?? "N/A";
 	},
 
-	formatYesNo(value: boolean): string {
-		return value ? "Yes" : "No";
-	},
-
 	formatDate(value: string): string {
 		if (!value) return "N/A";
 		try {
@@ -114,14 +110,20 @@ export default {
 		return Number(value).toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
 	},
 
+	formatNetWeight(entry: unknown, exit: unknown): string {
+		if (entry == null || exit == null) return "N/A";
+		const net = Math.abs(Number(entry) - Number(exit));
+		return net.toLocaleString("en-IN", { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+	},
+
 	formatDocuments(aDocuments: unknown): string {
 		if (!aDocuments) return "N/A";
 		if (typeof aDocuments === "string") return aDocuments;
 		if (Array.isArray(aDocuments)) {
-			return aDocuments
+			const vals = aDocuments
 				.map((d: unknown) => (typeof d === "object" && d !== null) ? (d as Record<string, unknown>).value : d)
-				.filter(Boolean)
-				.join(", ");
+				.filter(Boolean);
+			return vals.length ? vals.join(", ") : "N/A";
 		}
 		return String(aDocuments);
 	}

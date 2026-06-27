@@ -41,7 +41,7 @@
 					</VBox>
 					<VBox width="25%">
 						<Label text="{i18n>weighbridgeApplicable}" design="Bold"/>
-						<Text text="{ path: 'weighbridgeRequired', formatter: 'formatter.formatYesNo' }"/>
+						<Text text="{= %{weighbridgeRequired} === true ? 'Yes' : 'No'}"/>
 					</VBox>
 					<VBox width="25%">
 						<Label text="{i18n>expectedReturnDate}" design="Bold"/>
@@ -114,13 +114,17 @@
 							</VBox>
 						</HBox>
 						<HBox>
-							<VBox width="50%">
+							<VBox width="33%">
 								<Label text="{i18n>entryWeight}" design="Bold"/>
 								<Text text="{ path: 'weight/entryWeight', formatter: 'formatter.formatWeight' }"/>
 							</VBox>
-							<VBox width="50%">
+							<VBox width="33%">
 								<Label text="{i18n>exitWeight}" design="Bold"/>
 								<Text text="{ path: 'weight/exitWeight', formatter: 'formatter.formatWeight' }"/>
+							</VBox>
+							<VBox width="34%">
+								<Label text="{i18n>netWeight}" design="Bold"/>
+								<Text text="{ parts: ['weight/entryWeight', 'weight/exitWeight'], formatter: 'formatter.formatNetWeight' }"/>
 							</VBox>
 						</HBox>
 					</VBox>
