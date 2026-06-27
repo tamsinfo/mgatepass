@@ -48,7 +48,9 @@ export default class AppController extends BaseController {
 	}
 
 	public onRefreshTable(): void {
-		this.applyStatusFilter();
+		const oTable = this.byId("passesTable") as Table;
+		const oBinding = oTable.getBinding("items") as ODataListBinding;
+		if (oBinding) oBinding.refresh();
 		this.loadTabCounts();
 	}
 
